@@ -848,7 +848,7 @@ En R, la función `prcomp()` facilita su implementación. La interpretación req
 
 En la administración pública, PCA puede facilitar el análisis de indicadores territoriales e institucionales, pero sus componentes son construcciones estadísticas y no dimensiones causales ni prioridades de política pública por sí mismas. Su uso debe acompañarse de justificación conceptual, transparencia y evaluación de sus limitaciones.
 
-# .Referencias y recursos
+# .Referencias
 
 - Jolliffe, I. T., & Cadima, J. (2016). Principal component analysis: A review and recent developments. *Philosophical Transactions of the Royal Society A, 374*(2065), 20150202. https://doi.org/10.1098/rsta.2015.0202
 - Jolliffe, I. T. (2002). *Principal Component Analysis* (2nd ed.). Springer.
