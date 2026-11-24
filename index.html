@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Dagoberto Salgado Horta">
+
+<title>Análisis de Componentes Principales (PCA)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/quarto.js"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="index_files/libs/quarto-html/anchor.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="index_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<style>html{ scroll-behavior: smooth; }</style>
+<style>
+
+      .quarto-title-block .quarto-title-banner {
+        background: #98b6ed;
+      }
+</style>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="estilos.css">
+</head>
+
+<body>
+
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-page-left">
+      <h1 class="title">Análisis de Componentes Principales (PCA)</h1>
+            <p class="subtitle lead">Fundamentos matemáticos, implementación en R</p>
+                      </div>
+  </div>
+    
+  <div class="quarto-title-meta-author column-page-left">
+    <div class="quarto-title-meta-heading">Autor/a</div>
+    <div class="quarto-title-meta-heading">Afiliación</div>
+    
+      <div class="quarto-title-meta-contents">
+      <p class="author">Dagoberto Salgado Horta </p>
+    </div>
+    <div class="quarto-title-meta-contents">
+          <p class="affiliation">
+              <a href="https://www.esap.edu.co/">
+              Escuela Superior de Administración Pública
+              </a>
+            </p>
+        </div>
+    </div>
+
+  <div class="quarto-title-meta column-page-left">
+
+        
+      <div>
+      <div class="quarto-title-meta-heading">Fecha de publicación</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">23 de noviembre de 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-full">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Tabla de contenidos</h2>
+   
+  <ul>
+  <li><a href="#cargar-paquetes" id="toc-cargar-paquetes" class="nav-link active" data-scroll-target="#cargar-paquetes"><span class="header-section-number">1</span> .Cargar paquetes</a></li>
+  <li><a href="#presentación" id="toc-presentación" class="nav-link" data-scroll-target="#presentación"><span class="header-section-number">2</span> .Presentación</a>
+  <ul class="collapse">
+  <li><a href="#resultados-de-aprendizaje" id="toc-resultados-de-aprendizaje" class="nav-link" data-scroll-target="#resultados-de-aprendizaje"><span class="header-section-number">2.1</span> .Resultados de aprendizaje</a></li>
+  </ul></li>
+  <li><a href="#fundamentos-del-pca" id="toc-fundamentos-del-pca" class="nav-link" data-scroll-target="#fundamentos-del-pca"><span class="header-section-number">3</span> .Fundamentos del PCA</a>
+  <ul class="collapse">
+  <li><a href="#qué-es-el-pca" id="toc-qué-es-el-pca" class="nav-link" data-scroll-target="#qué-es-el-pca"><span class="header-section-number">3.1</span> .¿Qué es el PCA?</a></li>
+  <li><a href="#ejemplo-en-administración-pública" id="toc-ejemplo-en-administración-pública" class="nav-link" data-scroll-target="#ejemplo-en-administración-pública"><span class="header-section-number">3.2</span> .Ejemplo en administración pública</a></li>
+  <li><a href="#por-qué-reducir-la-dimensionalidad" id="toc-por-qué-reducir-la-dimensionalidad" class="nav-link" data-scroll-target="#por-qué-reducir-la-dimensionalidad"><span class="header-section-number">3.3</span> .¿Por qué reducir la dimensionalidad?</a></li>
+  <li><a href="#pca-y-análisis-de-conglomerados" id="toc-pca-y-análisis-de-conglomerados" class="nav-link" data-scroll-target="#pca-y-análisis-de-conglomerados"><span class="header-section-number">3.4</span> .PCA y análisis de conglomerados</a></li>
+  </ul></li>
+  <li><a href="#fundamentos-matemáticos-del-pca" id="toc-fundamentos-matemáticos-del-pca" class="nav-link" data-scroll-target="#fundamentos-matemáticos-del-pca"><span class="header-section-number">4</span> .Fundamentos matemáticos del PCA</a>
+  <ul class="collapse">
+  <li><a href="#matriz-de-datos" id="toc-matriz-de-datos" class="nav-link" data-scroll-target="#matriz-de-datos"><span class="header-section-number">4.1</span> .Matriz de datos</a></li>
+  <li><a href="#centrado-y-estandarización" id="toc-centrado-y-estandarización" class="nav-link" data-scroll-target="#centrado-y-estandarización"><span class="header-section-number">4.2</span> .Centrado y estandarización</a></li>
+  <li><a href="#matriz-de-covarianzas-y-matriz-de-correlaciones" id="toc-matriz-de-covarianzas-y-matriz-de-correlaciones" class="nav-link" data-scroll-target="#matriz-de-covarianzas-y-matriz-de-correlaciones"><span class="header-section-number">4.3</span> .Matriz de covarianzas y matriz de correlaciones</a></li>
+  <li><a href="#valores-y-vectores-propios" id="toc-valores-y-vectores-propios" class="nav-link" data-scroll-target="#valores-y-vectores-propios"><span class="header-section-number">4.4</span> .Valores y vectores propios</a></li>
+  <li><a href="#componentes-principales" id="toc-componentes-principales" class="nav-link" data-scroll-target="#componentes-principales"><span class="header-section-number">4.5</span> .Componentes principales</a></li>
+  <li><a href="#proporción-de-varianza-explicada" id="toc-proporción-de-varianza-explicada" class="nav-link" data-scroll-target="#proporción-de-varianza-explicada"><span class="header-section-number">4.6</span> .Proporción de varianza explicada</a></li>
+  </ul></li>
+  <li><a href="#criterios-para-seleccionar-el-número-de-componentes" id="toc-criterios-para-seleccionar-el-número-de-componentes" class="nav-link" data-scroll-target="#criterios-para-seleccionar-el-número-de-componentes"><span class="header-section-number">5</span> .Criterios para seleccionar el número de componentes</a>
+  <ul class="collapse">
+  <li><a href="#porcentaje-de-varianza-acumulada" id="toc-porcentaje-de-varianza-acumulada" class="nav-link" data-scroll-target="#porcentaje-de-varianza-acumulada"><span class="header-section-number">5.1</span> .Porcentaje de varianza acumulada</a></li>
+  <li><a href="#gráfico-de-sedimentación-scree-plot" id="toc-gráfico-de-sedimentación-scree-plot" class="nav-link" data-scroll-target="#gráfico-de-sedimentación-scree-plot"><span class="header-section-number">5.2</span> .Gráfico de sedimentación (scree plot)</a></li>
+  <li><a href="#criterio-de-kaiser" id="toc-criterio-de-kaiser" class="nav-link" data-scroll-target="#criterio-de-kaiser"><span class="header-section-number">5.3</span> .Criterio de Kaiser</a></li>
+  <li><a href="#interpretabilidad" id="toc-interpretabilidad" class="nav-link" data-scroll-target="#interpretabilidad"><span class="header-section-number">5.4</span> .Interpretabilidad</a></li>
+  </ul></li>
+  <li><a href="#cargas-puntuaciones-y-contribuciones" id="toc-cargas-puntuaciones-y-contribuciones" class="nav-link" data-scroll-target="#cargas-puntuaciones-y-contribuciones"><span class="header-section-number">6</span> .Cargas, puntuaciones y contribuciones</a>
+  <ul class="collapse">
+  <li><a href="#cargas-de-las-variables" id="toc-cargas-de-las-variables" class="nav-link" data-scroll-target="#cargas-de-las-variables"><span class="header-section-number">6.1</span> .Cargas de las variables</a></li>
+  <li><a href="#puntuaciones-de-los-componentes" id="toc-puntuaciones-de-los-componentes" class="nav-link" data-scroll-target="#puntuaciones-de-los-componentes"><span class="header-section-number">6.2</span> .Puntuaciones de los componentes</a></li>
+  <li><a href="#biplot" id="toc-biplot" class="nav-link" data-scroll-target="#biplot"><span class="header-section-number">6.3</span> .Biplot</a></li>
+  </ul></li>
+  <li><a href="#preparación-del-entorno-de-trabajo-en-r" id="toc-preparación-del-entorno-de-trabajo-en-r" class="nav-link" data-scroll-target="#preparación-del-entorno-de-trabajo-en-r"><span class="header-section-number">7</span> .Preparación del entorno de trabajo en R</a>
+  <ul class="collapse">
+  <li><a href="#instalación-y-carga-de-paquetes" id="toc-instalación-y-carga-de-paquetes" class="nav-link" data-scroll-target="#instalación-y-carga-de-paquetes"><span class="header-section-number">7.1</span> .Instalación y carga de paquetes</a></li>
+  <li><a href="#revisión-de-datos" id="toc-revisión-de-datos" class="nav-link" data-scroll-target="#revisión-de-datos"><span class="header-section-number">7.2</span> .Revisión de datos</a></li>
+  </ul></li>
+  <li><a href="#ejemplo-completo" id="toc-ejemplo-completo" class="nav-link" data-scroll-target="#ejemplo-completo"><span class="header-section-number">8</span> ,Ejemplo completo</a>
+  <ul class="collapse">
+  <li><a href="#planteamiento-del-problema" id="toc-planteamiento-del-problema" class="nav-link" data-scroll-target="#planteamiento-del-problema"><span class="header-section-number">8.1</span> .Planteamiento del problema</a></li>
+  <li><a href="#construcción-de-una-base-simulada" id="toc-construcción-de-una-base-simulada" class="nav-link" data-scroll-target="#construcción-de-una-base-simulada"><span class="header-section-number">8.2</span> .Construcción de una base simulada</a></li>
+  <li><a href="#exploración-inicial" id="toc-exploración-inicial" class="nav-link" data-scroll-target="#exploración-inicial"><span class="header-section-number">8.3</span> .Exploración inicial</a></li>
+  <li><a href="#selección-de-variables" id="toc-selección-de-variables" class="nav-link" data-scroll-target="#selección-de-variables"><span class="header-section-number">8.4</span> .Selección de variables</a></li>
+  <li><a href="#matriz-de-correlaciones" id="toc-matriz-de-correlaciones" class="nav-link" data-scroll-target="#matriz-de-correlaciones"><span class="header-section-number">8.5</span> .Matriz de correlaciones</a></li>
+  </ul></li>
+  <li><a href="#implementación-del-pca-con-prcomp" id="toc-implementación-del-pca-con-prcomp" class="nav-link" data-scroll-target="#implementación-del-pca-con-prcomp"><span class="header-section-number">9</span> .Implementación del PCA con prcomp()</a>
+  <ul class="collapse">
+  <li><a href="#estandarización-y-ajuste-del-modelo" id="toc-estandarización-y-ajuste-del-modelo" class="nav-link" data-scroll-target="#estandarización-y-ajuste-del-modelo"><span class="header-section-number">9.1</span> .Estandarización y ajuste del modelo</a></li>
+  <li><a href="#resumen-de-los-componentes" id="toc-resumen-de-los-componentes" class="nav-link" data-scroll-target="#resumen-de-los-componentes"><span class="header-section-number">9.2</span> .Resumen de los componentes</a></li>
+  <li><a href="#valores-propios" id="toc-valores-propios" class="nav-link" data-scroll-target="#valores-propios"><span class="header-section-number">9.3</span> .Valores propios</a></li>
+  <li><a href="#gráfico-de-sedimentación" id="toc-gráfico-de-sedimentación" class="nav-link" data-scroll-target="#gráfico-de-sedimentación"><span class="header-section-number">9.4</span> .Gráfico de sedimentación</a></li>
+  </ul></li>
+  <li><a href="#interpretación-de-los-componentes-principales" id="toc-interpretación-de-los-componentes-principales" class="nav-link" data-scroll-target="#interpretación-de-los-componentes-principales"><span class="header-section-number">10</span> .Interpretación de los componentes principales</a>
+  <ul class="collapse">
+  <li><a href="#matriz-de-rotaciones" id="toc-matriz-de-rotaciones" class="nav-link" data-scroll-target="#matriz-de-rotaciones"><span class="header-section-number">10.1</span> .Matriz de rotaciones</a></li>
+  <li><a href="#gráfico-de-variables" id="toc-gráfico-de-variables" class="nav-link" data-scroll-target="#gráfico-de-variables"><span class="header-section-number">10.2</span> .Gráfico de variables</a></li>
+  <li><a href="#gráfico-de-individuos" id="toc-gráfico-de-individuos" class="nav-link" data-scroll-target="#gráfico-de-individuos"><span class="header-section-number">10.3</span> .Gráfico de individuos</a></li>
+  <li><a href="#biplot-1" id="toc-biplot-1" class="nav-link" data-scroll-target="#biplot-1"><span class="header-section-number">10.4</span> .Biplot</a></li>
+  </ul></li>
+  <li><a href="#puntuaciones-e-interpretación-de-municipios" id="toc-puntuaciones-e-interpretación-de-municipios" class="nav-link" data-scroll-target="#puntuaciones-e-interpretación-de-municipios"><span class="header-section-number">11</span> .Puntuaciones e interpretación de municipios</a>
+  <ul class="collapse">
+  <li><a href="#obtener-puntuaciones" id="toc-obtener-puntuaciones" class="nav-link" data-scroll-target="#obtener-puntuaciones"><span class="header-section-number">11.1</span> .Obtener puntuaciones</a></li>
+  <li><a href="#ordenar-municipios-según-el-primer-componente" id="toc-ordenar-municipios-según-el-primer-componente" class="nav-link" data-scroll-target="#ordenar-municipios-según-el-primer-componente"><span class="header-section-number">11.2</span> .Ordenar municipios según el primer componente</a></li>
+  <li><a href="#visualizar-las-puntuaciones" id="toc-visualizar-las-puntuaciones" class="nav-link" data-scroll-target="#visualizar-las-puntuaciones"><span class="header-section-number">11.3</span> .Visualizar las puntuaciones</a></li>
+  </ul></li>
+  <li><a href="#construcción-de-un-indicador-sintético-precauciones" id="toc-construcción-de-un-indicador-sintético-precauciones" class="nav-link" data-scroll-target="#construcción-de-un-indicador-sintético-precauciones"><span class="header-section-number">12</span> .Construcción de un indicador sintético: precauciones</a></li>
+  <li><a href="#pca-como-paso-previo-a-k-means" id="toc-pca-como-paso-previo-a-k-means" class="nav-link" data-scroll-target="#pca-como-paso-previo-a-k-means"><span class="header-section-number">13</span> .PCA como paso previo a K-Means</a></li>
+  <li><a href="#buenas-prácticas-y-limitaciones" id="toc-buenas-prácticas-y-limitaciones" class="nav-link" data-scroll-target="#buenas-prácticas-y-limitaciones"><span class="header-section-number">14</span> .Buenas prácticas y limitaciones</a></li>
+  <li><a href="#actividades-para-el-estudiante" id="toc-actividades-para-el-estudiante" class="nav-link" data-scroll-target="#actividades-para-el-estudiante"><span class="header-section-number">15</span> .Actividades para el estudiante</a>
+  <ul class="collapse">
+  <li><a href="#actividad-1." id="toc-actividad-1." class="nav-link" data-scroll-target="#actividad-1."><span class="header-section-number">15.1</span> .Actividad 1.</a></li>
+  <li><a href="#actividad-2." id="toc-actividad-2." class="nav-link" data-scroll-target="#actividad-2."><span class="header-section-number">15.2</span> .Actividad 2.</a></li>
+  <li><a href="#actividad-3." id="toc-actividad-3." class="nav-link" data-scroll-target="#actividad-3."><span class="header-section-number">15.3</span> .Actividad 3.</a></li>
+  <li><a href="#actividad-4." id="toc-actividad-4." class="nav-link" data-scroll-target="#actividad-4."><span class="header-section-number">15.4</span> .Actividad 4.</a></li>
+  <li><a href="#actividad-5." id="toc-actividad-5." class="nav-link" data-scroll-target="#actividad-5."><span class="header-section-number">15.5</span> .Actividad 5.</a></li>
+  </ul></li>
+  <li><a href="#reto-de-aplicación" id="toc-reto-de-aplicación" class="nav-link" data-scroll-target="#reto-de-aplicación"><span class="header-section-number">16</span> .Reto de aplicación</a></li>
+  <li><a href="#conclusiones" id="toc-conclusiones" class="nav-link" data-scroll-target="#conclusiones"><span class="header-section-number">17</span> .Conclusiones</a></li>
+  <li><a href="#referencias-y-recursos" id="toc-referencias-y-recursos" class="nav-link" data-scroll-target="#referencias-y-recursos"><span class="header-section-number">18</span> .Referencias y recursos</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content quarto-banner-title-block column-page-left" id="quarto-document-content">
+
+
+
+
+
+<div style="position:absolute; top:10px; right:10px;">
+<img src="Logo_ut.png" width="150">
+</div>
+<style>
+body{
+  background-color:#f7f6ed;
+  font-size:130%;
+  text-align:justify;
+}
+</style>
+<section id="cargar-paquetes" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> .Cargar paquetes</h1>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ipak <span class="ot">&lt;-</span> <span class="cf">function</span>(pkg){</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">options</span>(<span class="at">repos =</span> <span class="fu">c</span>(<span class="at">CRAN=</span><span class="st">"https://cloud.r-project.org"</span>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  new.pkg <span class="ot">&lt;-</span> pkg[<span class="sc">!</span>(pkg <span class="sc">%in%</span> <span class="fu">rownames</span>(<span class="fu">installed.packages</span>()))]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">length</span>(new.pkg)) <span class="fu">install.packages</span>(new.pkg, <span class="at">dependencies =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(<span class="fu">lapply</span>(pkg, <span class="cf">function</span>(p)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(p, <span class="at">character.only =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"tidyverse"</span>,<span class="st">"kableExtra"</span>,<span class="st">"psych"</span>,<span class="st">"readxl"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ipak</span>(packages)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="presentación" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> .Presentación</h1>
+<p>En la administración pública es frecuente trabajar con bases de datos que contienen numerosos indicadores relacionados entre sí. Por ejemplo, para estudiar las condiciones de desarrollo de los municipios se pueden considerar indicadores de pobreza, educación, salud, empleo, vivienda, servicios públicos e inversión social.</p>
+<p>Cuando se utilizan muchas variables, el análisis puede resultar complejo, especialmente si existe correlación entre ellas. El <strong>Análisis de Componentes Principales (PCA, por sus siglas en inglés)</strong> es una técnica estadística multivariada que permite resumir la información de un conjunto de variables cuantitativas mediante un número menor de componentes no correlacionados entre sí.</p>
+<p>El PCA se utiliza para explorar patrones, reducir la dimensionalidad de los datos, visualizar observaciones y construir indicadores sintéticos. No reemplaza el análisis sustantivo de los fenómenos públicos ni demuestra relaciones causales.</p>
+<p>Este módulo presenta los fundamentos del PCA, su lógica matemática, la implementación en R y la interpretación de los resultados mediante un ejemplo de indicadores municipales.</p>
+<section id="resultados-de-aprendizaje" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="resultados-de-aprendizaje"><span class="header-section-number">2.1</span> .Resultados de aprendizaje</h2>
+<p>Al finalizar el módulo, el estudiante estará en capacidad de:</p>
+<ul>
+<li>Explicar el propósito del análisis de componentes principales.</li>
+<li>Reconocer cuándo es pertinente aplicar PCA.</li>
+<li>Comprender la relación entre varianza, covarianza, correlación y componentes principales.</li>
+<li>Estandarizar variables y preparar una matriz de datos para el análisis.</li>
+<li>Implementar PCA mediante <code>prcomp()</code> en R.</li>
+<li>Interpretar valores propios, proporción de varianza explicada y cargas factoriales.</li>
+<li>Utilizar gráficos de sedimentación, círculo de correlaciones y biplot.</li>
+<li>Interpretar puntuaciones de los componentes para comparar municipios.</li>
+<li>Reconocer las limitaciones y precauciones del uso de indicadores sintéticos en la gestión pública.</li>
+</ul>
+</section>
+</section>
+<section id="fundamentos-del-pca" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> .Fundamentos del PCA</h1>
+<section id="qué-es-el-pca" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="qué-es-el-pca"><span class="header-section-number">3.1</span> .¿Qué es el PCA?</h2>
+<p>El Análisis de Componentes Principales es una técnica de reducción de dimensionalidad que transforma un conjunto de variables cuantitativas posiblemente correlacionadas en un conjunto más pequeño de nuevas variables llamadas <strong>componentes principales</strong>.</p>
+<p>Cada componente es una combinación lineal de las variables originales. Los componentes se construyen de modo que:</p>
+<ul>
+<li>El primer componente explica la mayor proporción posible de la variabilidad total.</li>
+<li>El segundo componente explica la mayor proporción posible de la variabilidad restante y es ortogonal al primero.</li>
+<li>Los componentes siguientes explican progresivamente la variabilidad restante y son ortogonales a los anteriores.</li>
+</ul>
+<p>El propósito es conservar una parte importante de la información original utilizando menos dimensiones.</p>
+</section>
+<section id="ejemplo-en-administración-pública" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="ejemplo-en-administración-pública"><span class="header-section-number">3.2</span> .Ejemplo en administración pública</h2>
+<p>Una gobernación desea estudiar las condiciones de desarrollo de 50 municipios. Dispone de indicadores relacionados con:</p>
+<ul>
+<li>Pobreza multidimensional.</li>
+<li>Cobertura educativa.</li>
+<li>Cobertura de acueducto.</li>
+<li>Cobertura de alcantarillado.</li>
+<li>Acceso a servicios de salud.</li>
+<li>Desempleo.</li>
+<li>Inversión social por habitante.</li>
+</ul>
+<p>Algunas variables pueden estar relacionadas. Por ejemplo, la cobertura de acueducto y alcantarillado podrían presentar una correlación positiva. El PCA permite resumir parte de la información común en componentes principales.</p>
+<p>La técnica puede facilitar la exploración de perfiles territoriales y la construcción de indicadores sintéticos, siempre que se interpreten cuidadosamente las variables y las direcciones de los componentes.</p>
+</section>
+<section id="por-qué-reducir-la-dimensionalidad" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="por-qué-reducir-la-dimensionalidad"><span class="header-section-number">3.3</span> .¿Por qué reducir la dimensionalidad?</h2>
+<p>Cuando una base tiene muchas variables, pueden presentarse dificultades como:</p>
+<ul>
+<li>Correlaciones elevadas entre variables.</li>
+<li>Dificultad para visualizar observaciones en muchas dimensiones.</li>
+<li>Redundancia de información.</li>
+<li>Complejidad para resumir y comunicar resultados.</li>
+<li>Dificultad para construir modelos posteriores con variables altamente relacionadas.</li>
+</ul>
+<p>PCA permite representar los datos en menos dimensiones, procurando conservar la mayor cantidad posible de variabilidad.</p>
+</section>
+<section id="pca-y-análisis-de-conglomerados" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="pca-y-análisis-de-conglomerados"><span class="header-section-number">3.4</span> .PCA y análisis de conglomerados</h2>
+<p>PCA y K-Means tienen propósitos diferentes:</p>
+<table class="table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Característica</th>
+<th>PCA</th>
+<th>K-Means</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Objetivo</td>
+<td>Reducir dimensiones</td>
+<td>Formar grupos</td>
+</tr>
+<tr class="even">
+<td>Resultado</td>
+<td>Componentes principales</td>
+<td>Conglomerados</td>
+</tr>
+<tr class="odd">
+<td>Requiere definir K</td>
+<td>No</td>
+<td>Sí</td>
+</tr>
+<tr class="even">
+<td>Variable respuesta</td>
+<td>No requiere</td>
+<td>No requiere</td>
+</tr>
+<tr class="odd">
+<td>Uso habitual</td>
+<td>Resumir y visualizar información</td>
+<td>Identificar grupos de observaciones</td>
+</tr>
+</tbody>
+</table>
+<p>PCA puede utilizarse antes de un análisis de conglomerados para representar los datos en menos dimensiones. Sin embargo, no siempre es necesario ni garantiza que el agrupamiento posterior sea mejor.</p>
+</section>
+</section>
+<section id="fundamentos-matemáticos-del-pca" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> .Fundamentos matemáticos del PCA</h1>
+<section id="matriz-de-datos" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="matriz-de-datos"><span class="header-section-number">4.1</span> .Matriz de datos</h2>
+<p>Suponga que se tienen <span class="math inline">n</span> municipios y <span class="math inline">p</span> indicadores. La matriz de datos se representa como:</p>
+<p><span class="math display">
+X=
+\begin{pmatrix}
+x_{11} &amp; x_{12} &amp; \cdots &amp; x_{1p}\\
+x_{21} &amp; x_{22} &amp; \cdots &amp; x_{2p}\\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots\\
+x_{n1} &amp; x_{n2} &amp; \cdots &amp; x_{np}
+\end{pmatrix}
+</span></p>
+<p>Las filas representan municipios y las columnas representan indicadores.</p>
+</section>
+<section id="centrado-y-estandarización" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="centrado-y-estandarización"><span class="header-section-number">4.2</span> .Centrado y estandarización</h2>
+<p>Antes de aplicar PCA se suele centrar cada variable restando su media:</p>
+<p><span class="math display">
+X_{c,ij}=X_{ij}-\bar X_j
+</span></p>
+<p>Si las variables tienen unidades o escalas diferentes, se recomienda estandarizarlas:</p>
+<p><span class="math display">
+Z_{ij}=\frac{X_{ij}-\bar X_j}{s_j}
+</span></p>
+<p>Donde:</p>
+<ul>
+<li><span class="math inline">X_{ij}</span>: valor observado de la variable <span class="math inline">j</span> en la unidad <span class="math inline">i</span>.</li>
+<li><span class="math inline">\bar X_j</span>: media de la variable <span class="math inline">j</span>.</li>
+<li><span class="math inline">s_j</span>: desviación estándar de la variable <span class="math inline">j</span>.</li>
+</ul>
+<p>La estandarización hace que las variables tengan media cero y desviación estándar uno. De este modo, una variable expresada en pesos no domina automáticamente a otra expresada en porcentajes.</p>
+<p>La decisión de estandarizar debe considerar el significado de las variables. Si todas están en unidades comparables y sus escalas son intencionales, el centrado sin escalado puede ser apropiado.</p>
+</section>
+<section id="matriz-de-covarianzas-y-matriz-de-correlaciones" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="matriz-de-covarianzas-y-matriz-de-correlaciones"><span class="header-section-number">4.3</span> .Matriz de covarianzas y matriz de correlaciones</h2>
+<p>El PCA puede obtenerse a partir de la matriz de covarianzas o de la matriz de correlaciones.</p>
+<p>La covarianza entre dos variables <span class="math inline">X_j</span> y <span class="math inline">X_k</span> se define como:</p>
+<p><span class="math display">
+Cov(X_j,X_k)=
+\frac{1}{n-1}\sum_{i=1}^{n}
+(X_{ij}-\bar X_j)(X_{ik}-\bar X_k)
+</span></p>
+<p>La matriz de correlaciones contiene las correlaciones entre todos los pares de variables. Cuando se estandarizan las variables, el PCA basado en la matriz de covarianzas de los datos estandarizados equivale al PCA basado en la matriz de correlaciones de las variables originales.</p>
+</section>
+<section id="valores-y-vectores-propios" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="valores-y-vectores-propios"><span class="header-section-number">4.4</span> .Valores y vectores propios</h2>
+<p>El PCA se basa en la descomposición de la matriz de covarianzas o correlaciones. Para una matriz <span class="math inline">S</span>, se buscan valores propios <span class="math inline">\lambda</span> y vectores propios <span class="math inline">v</span> que satisfacen:</p>
+<p><span class="math display">
+Sv=\lambda v
+</span></p>
+<p>Los valores propios representan la varianza explicada por cada componente. Los vectores propios determinan las ponderaciones de las variables originales en cada componente.</p>
+<p>Los valores propios se ordenan de mayor a menor:</p>
+<p><span class="math display">
+\lambda_1\geq\lambda_2\geq\cdots\geq\lambda_p\geq 0
+</span></p>
+</section>
+<section id="componentes-principales" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="componentes-principales"><span class="header-section-number">4.5</span> .Componentes principales</h2>
+<p>Cada componente es una combinación lineal de las variables originales estandarizadas:</p>
+<p><span class="math display">
+PC_1=a_{11}Z_1+a_{12}Z_2+\cdots+a_{1p}Z_p
+</span></p>
+<p><span class="math display">
+PC_2=a_{21}Z_1+a_{22}Z_2+\cdots+a_{2p}Z_p
+</span></p>
+<p>Los coeficientes <span class="math inline">a_{ij}</span> corresponden a las ponderaciones asociadas a los vectores propios.</p>
+<p>Los componentes son ortogonales entre sí, es decir, no están correlacionados en la muestra bajo la construcción estándar del PCA.</p>
+</section>
+<section id="proporción-de-varianza-explicada" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="proporción-de-varianza-explicada"><span class="header-section-number">4.6</span> .Proporción de varianza explicada</h2>
+<p>La proporción de varianza explicada por el componente <span class="math inline">j</span> se calcula como:</p>
+<p><span class="math display">
+PVE_j=\frac{\lambda_j}{\sum_{k=1}^{p}\lambda_k}
+</span></p>
+<p>La proporción acumulada hasta el componente <span class="math inline">m</span> es:</p>
+<p><span class="math display">
+PVE_{acum}(m)=
+\sum_{j=1}^{m}PVE_j
+</span></p>
+<p>Por ejemplo, si los dos primeros componentes explican 72 % de la variabilidad total, una representación en dos dimensiones conserva el 72 % de la variabilidad según el criterio del PCA.</p>
+</section>
+</section>
+<section id="criterios-para-seleccionar-el-número-de-componentes" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> .Criterios para seleccionar el número de componentes</h1>
+<p>No existe una regla única para determinar cuántos componentes conservar. Se recomienda combinar criterios estadísticos y sustantivos.</p>
+<section id="porcentaje-de-varianza-acumulada" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="porcentaje-de-varianza-acumulada"><span class="header-section-number">5.1</span> .Porcentaje de varianza acumulada</h2>
+<p>Se puede seleccionar el menor número de componentes que alcance un porcentaje acumulado considerado suficiente para el propósito del análisis. En aplicaciones exploratorias suele examinarse el rango de 70 % a 85 %, pero no es un umbral universal.</p>
+</section>
+<section id="gráfico-de-sedimentación-scree-plot" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="gráfico-de-sedimentación-scree-plot"><span class="header-section-number">5.2</span> .Gráfico de sedimentación (scree plot)</h2>
+<p>Representa los valores propios en orden descendente. Se busca un punto de inflexión a partir del cual la varianza explicada por los componentes adicionales disminuye menos.</p>
+</section>
+<section id="criterio-de-kaiser" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="criterio-de-kaiser"><span class="header-section-number">5.3</span> .Criterio de Kaiser</h2>
+<p>Cuando el PCA se realiza sobre variables estandarizadas, el criterio de Kaiser propone conservar componentes con valores propios mayores que 1.</p>
+<p>Este criterio es una referencia práctica, no una regla definitiva. Puede retener demasiados o muy pocos componentes según el conjunto de datos.</p>
+</section>
+<section id="interpretabilidad" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="interpretabilidad"><span class="header-section-number">5.4</span> .Interpretabilidad</h2>
+<p>Los componentes seleccionados deben tener una interpretación razonable a partir de las variables que presentan mayores cargas. Un componente que explica mucha varianza pero no tiene interpretación útil puede no ser adecuado para construir un indicador de gestión.</p>
+</section>
+</section>
+<section id="cargas-puntuaciones-y-contribuciones" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> .Cargas, puntuaciones y contribuciones</h1>
+<section id="cargas-de-las-variables" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="cargas-de-las-variables"><span class="header-section-number">6.1</span> .Cargas de las variables</h2>
+<p>Las cargas permiten estudiar la relación entre las variables originales y los componentes. En R, la salida de <code>prcomp()</code> presenta las rotaciones, es decir, los coeficientes de los vectores propios.</p>
+<p>Una carga de magnitud elevada indica que la variable tiene un peso importante en la definición del componente. El signo indica la dirección de la relación con el componente.</p>
+<p>El signo global de un componente es arbitrario: multiplicar todos sus coeficientes por -1 produce el mismo componente con orientación opuesta. Por eso la interpretación debe centrarse en los signos relativos y en las magnitudes.</p>
+</section>
+<section id="puntuaciones-de-los-componentes" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="puntuaciones-de-los-componentes"><span class="header-section-number">6.2</span> .Puntuaciones de los componentes</h2>
+<p>Las puntuaciones (<em>scores</em>) son los valores de cada observación en los nuevos ejes. Permiten comparar municipios según los componentes retenidos.</p>
+<p>Por ejemplo, si el primer componente resume condiciones de cobertura de servicios y educación, las puntuaciones permiten identificar municipios con valores relativamente altos o bajos en esa dimensión.</p>
+</section>
+<section id="biplot" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="biplot"><span class="header-section-number">6.3</span> .Biplot</h2>
+<p>El biplot combina en una misma representación:</p>
+<ul>
+<li>Las observaciones, representadas mediante puntos.</li>
+<li>Las variables, representadas mediante vectores o flechas.</li>
+</ul>
+<p>Permite explorar qué municipios presentan valores altos o bajos en determinadas combinaciones de variables y cuáles indicadores tienden a variar conjuntamente.</p>
+<p>La interpretación depende del método de escalamiento y de la calidad de la representación en los componentes mostrados.</p>
+</section>
+</section>
+<section id="preparación-del-entorno-de-trabajo-en-r" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> .Preparación del entorno de trabajo en R</h1>
+<section id="instalación-y-carga-de-paquetes" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="instalación-y-carga-de-paquetes"><span class="header-section-number">7.1</span> .Instalación y carga de paquetes</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ejecutar una sola vez si los paquetes no están instalados</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c("tidyverse", "factoextra", "corrplot"))</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(factoextra)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(corrplot)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Funciones y paquetes principales:</p>
+<ul>
+<li><code>prcomp()</code>: función base de R para realizar PCA mediante descomposición en valores singulares.</li>
+<li><code>summary()</code>: resume la importancia de los componentes.</li>
+<li><code>factoextra</code>: facilita la visualización de resultados.</li>
+<li><code>corrplot</code>: permite representar matrices de correlaciones.</li>
+</ul>
+</section>
+<section id="revisión-de-datos" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="revisión-de-datos"><span class="header-section-number">7.2</span> .Revisión de datos</h2>
+<p>Antes de ejecutar PCA se debe:</p>
+<ol type="1">
+<li>Seleccionar variables cuantitativas pertinentes.</li>
+<li>Revisar datos faltantes.</li>
+<li>Examinar valores atípicos y errores de captura.</li>
+<li>Verificar que las variables tengan variabilidad.</li>
+<li>Decidir si se requiere estandarización.</li>
+</ol>
+<p>PCA no admite valores faltantes en su implementación habitual mediante <code>prcomp()</code>. Debe definirse un tratamiento apropiado antes del análisis.</p>
+</section>
+</section>
+<section id="ejemplo-completo" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> ,Ejemplo completo</h1>
+<p><strong>PCA de indicadores municipales</strong></p>
+<section id="planteamiento-del-problema" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="planteamiento-del-problema"><span class="header-section-number">8.1</span> .Planteamiento del problema</h2>
+<p>Una gobernación desea resumir un conjunto de indicadores de desarrollo municipal para explorar las principales dimensiones que caracterizan a sus territorios.</p>
+<p>Se utilizarán los siguientes indicadores:</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>pobreza</code></td>
+<td>Pobreza multidimensional (%)</td>
+</tr>
+<tr class="even">
+<td><code>cobertura_educativa</code></td>
+<td>Cobertura educativa (%)</td>
+</tr>
+<tr class="odd">
+<td><code>cobertura_acueducto</code></td>
+<td>Cobertura de acueducto (%)</td>
+</tr>
+<tr class="even">
+<td><code>cobertura_alcantarillado</code></td>
+<td>Cobertura de alcantarillado (%)</td>
+</tr>
+<tr class="odd">
+<td><code>acceso_salud</code></td>
+<td>Acceso a servicios de salud (%)</td>
+</tr>
+<tr class="even">
+<td><code>desempleo</code></td>
+<td>Desempleo (%)</td>
+</tr>
+<tr class="odd">
+<td><code>inversion_social</code></td>
+<td>Inversión social por habitante (miles de pesos)</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Los datos que se generan a continuación son simulados y tienen fines pedagógicos. No corresponden a indicadores oficiales.</p>
+</blockquote>
+</section>
+<section id="construcción-de-una-base-simulada" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="construcción-de-una-base-simulada"><span class="header-section-number">8.2</span> .Construcción de una base simulada</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Factor latente simulado para generar perfiles diferenciados</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>condicion <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>datos_municipios <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">municipio =</span> <span class="fu">paste</span>(<span class="st">"Municipio"</span>, <span class="fu">sprintf</span>(<span class="st">"%03d"</span>, <span class="dv">1</span><span class="sc">:</span>n)),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">pobreza =</span> <span class="dv">28</span> <span class="sc">-</span> <span class="dv">8</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">4</span>),</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">cobertura_educativa =</span> <span class="dv">78</span> <span class="sc">+</span> <span class="dv">6</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">4</span>),</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">cobertura_acueducto =</span> <span class="dv">70</span> <span class="sc">+</span> <span class="dv">10</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">6</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">cobertura_alcantarillado =</span> <span class="dv">62</span> <span class="sc">+</span> <span class="dv">11</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">7</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">acceso_salud =</span> <span class="dv">76</span> <span class="sc">+</span> <span class="dv">5</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">4</span>),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">desempleo =</span> <span class="dv">12</span> <span class="sc">-</span> <span class="fl">2.5</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fl">1.8</span>),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">inversion_social =</span> <span class="dv">650</span> <span class="sc">+</span> <span class="dv">100</span> <span class="sc">*</span> condicion <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">80</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">c</span>(pobreza, cobertura_educativa, cobertura_acueducto,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        cobertura_alcantarillado, acceso_salud, desempleo),</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">pmin</span>(<span class="fu">pmax</span>(.x, <span class="dv">0</span>), <span class="dv">100</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">inversion_social =</span> <span class="fu">pmax</span>(inversion_social, <span class="dv">50</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(datos_municipios)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 8
+  municipio     pobreza cobertura_educativa cobertura_acueducto
+  &lt;chr&gt;           &lt;dbl&gt;               &lt;dbl&gt;               &lt;dbl&gt;
+1 Municipio 001    28.7                79.4                74.3
+2 Municipio 002    34.7                73.4                58.1
+3 Municipio 003    26.0                77.9                66.2
+4 Municipio 004    24.2                70.1                74.9
+5 Municipio 005    37.3                72.8                58.3
+6 Municipio 006    50.4                70.0                40.3
+# ℹ 4 more variables: cobertura_alcantarillado &lt;dbl&gt;, acceso_salud &lt;dbl&gt;,
+#   desempleo &lt;dbl&gt;, inversion_social &lt;dbl&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="exploración-inicial" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="exploración-inicial"><span class="header-section-number">8.3</span> .Exploración inicial</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(datos_municipios)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 100
+Columns: 8
+$ municipio                &lt;chr&gt; "Municipio 001", "Municipio 002", "Municipio …
+$ pobreza                  &lt;dbl&gt; 28.70035, 34.66215, 25.97496, 24.23139, 37.31…
+$ cobertura_educativa      &lt;dbl&gt; 79.39543, 73.35622, 77.91802, 70.06366, 72.84…
+$ cobertura_acueducto      &lt;dbl&gt; 74.31434, 58.10538, 66.24349, 74.90147, 58.29…
+$ cobertura_alcantarillado &lt;dbl&gt; 77.08473, 53.99237, 56.13593, 59.73648, 48.30…
+$ acceso_salud             &lt;dbl&gt; 83.30137, 71.92303, 75.54246, 80.86250, 72.48…
+$ desempleo                &lt;dbl&gt; 12.430376, 14.378584, 11.657826, 13.132779, 1…
+$ inversion_social         &lt;dbl&gt; 793.1361, 488.3714, 686.9882, 654.6323, 626.8…</code></pre>
+</div>
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(datos_municipios)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  municipio            pobreza       cobertura_educativa cobertura_acueducto
+ Length:100         Min.   : 3.569   Min.   :61.30       Min.   :32.46      
+ Class :character   1st Qu.:22.519   1st Qu.:72.76       1st Qu.:59.27      
+ Mode  :character   Median :28.885   Median :77.27       Median :68.17      
+                    Mean   :29.270   Mean   :77.82       Mean   :68.56      
+                    3rd Qu.:36.665   3rd Qu.:82.59       3rd Qu.:76.40      
+                    Max.   :50.376   Max.   :94.05       Max.   :97.21      
+ cobertura_alcantarillado  acceso_salud     desempleo      inversion_social
+ Min.   :20.32            Min.   :62.56   Min.   : 4.146   Min.   :278.5   
+ 1st Qu.:54.12            1st Qu.:72.38   1st Qu.: 9.759   1st Qu.:576.0   
+ Median :62.84            Median :75.67   Median :12.088   Median :654.5   
+ Mean   :61.91            Mean   :76.11   Mean   :11.910   Mean   :645.6   
+ 3rd Qu.:69.93            3rd Qu.:80.72   3rd Qu.:14.156   3rd Qu.:718.2   
+ Max.   :90.70            Max.   :92.06   Max.   :18.310   Max.   :859.8   </code></pre>
+</div>
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Comprobar valores faltantes</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(datos_municipios))</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>               municipio                  pobreza      cobertura_educativa 
+                       0                        0                        0 
+     cobertura_acueducto cobertura_alcantarillado             acceso_salud 
+                       0                        0                        0 
+               desempleo         inversion_social 
+                       0                        0 </code></pre>
+</div>
+</div>
+</section>
+<section id="selección-de-variables" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="selección-de-variables"><span class="header-section-number">8.4</span> .Selección de variables</h2>
+<p>Se excluye el identificador <code>municipio</code>, porque no es una variable cuantitativa que deba participar en el cálculo de componentes.</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>indicadores <span class="ot">&lt;-</span> datos_municipios <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    pobreza,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    cobertura_educativa,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    cobertura_acueducto,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    cobertura_alcantarillado,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    acceso_salud,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    desempleo,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    inversion_social</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="matriz-de-correlaciones" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="matriz-de-correlaciones"><span class="header-section-number">8.5</span> .Matriz de correlaciones</h2>
+<p>Antes de realizar PCA es conveniente explorar las relaciones entre las variables.</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>matriz_cor <span class="ot">&lt;-</span> <span class="fu">cor</span>(indicadores)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(matriz_cor, <span class="dv">2</span>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         pobreza cobertura_educativa cobertura_acueducto
+pobreza                     1.00               -0.77               -0.78
+cobertura_educativa        -0.77                1.00                0.72
+cobertura_acueducto        -0.78                0.72                1.00
+cobertura_alcantarillado   -0.66                0.66                0.65
+acceso_salud               -0.73                0.71                0.71
+desempleo                   0.76               -0.74               -0.73
+inversion_social           -0.70                0.66                0.70
+                         cobertura_alcantarillado acceso_salud desempleo
+pobreza                                     -0.66        -0.73      0.76
+cobertura_educativa                          0.66         0.71     -0.74
+cobertura_acueducto                          0.65         0.71     -0.73
+cobertura_alcantarillado                     1.00         0.62     -0.68
+acceso_salud                                 0.62         1.00     -0.73
+desempleo                                   -0.68        -0.73      1.00
+inversion_social                             0.68         0.61     -0.66
+                         inversion_social
+pobreza                             -0.70
+cobertura_educativa                  0.66
+cobertura_acueducto                  0.70
+cobertura_alcantarillado             0.68
+acceso_salud                         0.61
+desempleo                           -0.66
+inversion_social                     1.00</code></pre>
+</div>
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">corrplot</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  matriz_cor,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"color"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"upper"</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">addCoef.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">tl.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">tl.srt =</span> <span class="dv">45</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Las correlaciones ayudan a identificar variables que presentan información compartida. Sin embargo, el PCA puede aplicarse aun cuando no todas las variables estén altamente correlacionadas; la utilidad de la reducción dependerá de la estructura global de los datos.</p>
+</section>
+</section>
+<section id="implementación-del-pca-con-prcomp" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> .Implementación del PCA con prcomp()</h1>
+<section id="estandarización-y-ajuste-del-modelo" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="estandarización-y-ajuste-del-modelo"><span class="header-section-number">9.1</span> .Estandarización y ajuste del modelo</h2>
+<p>Se utilizará <code>scale. = TRUE</code> para centrar y escalar las variables.</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>modelo_pca <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  indicadores,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">center =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">scale. =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>modelo_pca</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Standard deviations (1, .., p=7):
+[1] 2.2780403 0.6743171 0.5930676 0.5353798 0.5148969 0.5007894 0.4489537
+
+Rotation (n x k) = (7 x 7):
+                                PC1         PC2          PC3         PC4
+pobreza                   0.3941441  0.16954794 -0.272242271 -0.17128666
+cobertura_educativa      -0.3834682 -0.21433731 -0.004933774  0.69274787
+cobertura_acueducto      -0.3859083 -0.07537188  0.388282454 -0.21415350
+cobertura_alcantarillado -0.3591759  0.58524192 -0.642463249  0.03001803
+acceso_salud             -0.3723636 -0.44434686 -0.282915943 -0.62783722
+desempleo                 0.3857820  0.20270772  0.238070713 -0.11111723
+inversion_social         -0.3635762  0.58188438  0.474993071 -0.19357647
+                                PC5         PC6         PC7
+pobreza                   0.1882721 -0.09186883  0.81765683
+cobertura_educativa       0.3467761  0.31474309  0.32828472
+cobertura_acueducto      -0.6387308  0.18608752  0.45405202
+cobertura_alcantarillado -0.2398108  0.22732860 -0.07507964
+acceso_salud              0.3717642  0.22642561 -0.01424826
+desempleo                 0.1012834  0.84900614 -0.09993678
+inversion_social          0.4799445 -0.18468909  0.04093755</code></pre>
+</div>
+</div>
+<p>Argumentos:</p>
+<ul>
+<li><code>center = TRUE</code>: resta la media de cada variable.</li>
+<li><code>scale. = TRUE</code>: divide cada variable por su desviación estándar.</li>
+</ul>
+<p>La función <code>prcomp()</code> realiza el cálculo mediante descomposición en valores singulares, una estrategia numéricamente estable para obtener los componentes principales.</p>
+</section>
+<section id="resumen-de-los-componentes" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="resumen-de-los-componentes"><span class="header-section-number">9.2</span> .Resumen de los componentes</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelo_pca)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Importance of components:
+                          PC1     PC2     PC3     PC4     PC5     PC6     PC7
+Standard deviation     2.2780 0.67432 0.59307 0.53538 0.51490 0.50079 0.44895
+Proportion of Variance 0.7413 0.06496 0.05025 0.04095 0.03787 0.03583 0.02879
+Cumulative Proportion  0.7413 0.80631 0.85656 0.89750 0.93538 0.97121 1.00000</code></pre>
+</div>
+</div>
+<p>El resumen presenta:</p>
+<ul>
+<li>Desviación estándar de cada componente.</li>
+<li>Proporción de varianza explicada.</li>
+<li>Proporción acumulada de varianza explicada.</li>
+</ul>
+</section>
+<section id="valores-propios" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="valores-propios"><span class="header-section-number">9.3</span> .Valores propios</h2>
+<p>Los valores propios se obtienen elevando al cuadrado las desviaciones estándar de los componentes:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>valores_propios <span class="ot">&lt;-</span> modelo_pca<span class="sc">$</span>sdev<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>tabla_valores <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Componente =</span> <span class="fu">paste0</span>(<span class="st">"PC"</span>, <span class="fu">seq_along</span>(valores_propios)),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Valor_propio =</span> valores_propios,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Varianza_porcentual =</span> <span class="dv">100</span> <span class="sc">*</span> valores_propios <span class="sc">/</span> <span class="fu">sum</span>(valores_propios),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Varianza_acumulada =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">cumsum</span>(valores_propios) <span class="sc">/</span> <span class="fu">sum</span>(valores_propios)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>tabla_valores</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7 × 4
+  Componente Valor_propio Varianza_porcentual Varianza_acumulada
+  &lt;chr&gt;             &lt;dbl&gt;               &lt;dbl&gt;              &lt;dbl&gt;
+1 PC1               5.19                74.1                74.1
+2 PC2               0.455                6.50               80.6
+3 PC3               0.352                5.02               85.7
+4 PC4               0.287                4.09               89.8
+5 PC5               0.265                3.79               93.5
+6 PC6               0.251                3.58               97.1
+7 PC7               0.202                2.88              100  </code></pre>
+</div>
+</div>
+<p>La tabla permite determinar cuánta variabilidad explica cada componente y cuánta se acumula al conservar varios componentes.</p>
+</section>
+<section id="gráfico-de-sedimentación" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="gráfico-de-sedimentación"><span class="header-section-number">9.4</span> .Gráfico de sedimentación</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_eig</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  modelo_pca,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">addlabels =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Gráfico de sedimentación del PCA"</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Componentes principales"</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Porcentaje de varianza explicada"</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>El gráfico ayuda a observar dónde disminuye la contribución marginal de los componentes. Se debe interpretar junto con la varianza acumulada y la utilidad sustantiva.</p>
+</section>
+</section>
+<section id="interpretación-de-los-componentes-principales" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> .Interpretación de los componentes principales</h1>
+<section id="matriz-de-rotaciones" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="matriz-de-rotaciones"><span class="header-section-number">10.1</span> .Matriz de rotaciones</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(modelo_pca<span class="sc">$</span>rotation, <span class="dv">3</span>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                            PC1    PC2    PC3    PC4    PC5    PC6    PC7
+pobreza                   0.394  0.170 -0.272 -0.171  0.188 -0.092  0.818
+cobertura_educativa      -0.383 -0.214 -0.005  0.693  0.347  0.315  0.328
+cobertura_acueducto      -0.386 -0.075  0.388 -0.214 -0.639  0.186  0.454
+cobertura_alcantarillado -0.359  0.585 -0.642  0.030 -0.240  0.227 -0.075
+acceso_salud             -0.372 -0.444 -0.283 -0.628  0.372  0.226 -0.014
+desempleo                 0.386  0.203  0.238 -0.111  0.101  0.849 -0.100
+inversion_social         -0.364  0.582  0.475 -0.194  0.480 -0.185  0.041</code></pre>
+</div>
+</div>
+<p>Las columnas corresponden a los componentes y las filas a las variables originales. Los coeficientes muestran cómo se construye cada componente a partir de las variables estandarizadas.</p>
+<p>Para facilitar la interpretación de los dos primeros componentes:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>cargas <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(modelo_pca<span class="sc">$</span>rotation) <span class="sc">%&gt;%</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="st">"Variable"</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>cargas <span class="sc">%&gt;%</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Variable, PC1, PC2) <span class="sc">%&gt;%</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="fu">abs</span>(PC1)))</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  Variable        PC1         PC2
+1                  pobreza  0.3941441  0.16954794
+2      cobertura_acueducto -0.3859083 -0.07537188
+3                desempleo  0.3857820  0.20270772
+4      cobertura_educativa -0.3834682 -0.21433731
+5             acceso_salud -0.3723636 -0.44434686
+6         inversion_social -0.3635762  0.58188438
+7 cobertura_alcantarillado -0.3591759  0.58524192</code></pre>
+</div>
+</div>
+<p><strong>Orientación para interpretar:</strong></p>
+<ul>
+<li>Identifique las variables con coeficientes de mayor magnitud.</li>
+<li>Observe si sus signos son iguales u opuestos.</li>
+<li>Relacione el patrón con el fenómeno público estudiado.</li>
+<li>Evite asignar nombres a un componente basándose en una sola variable.</li>
+<li>Recuerde que el signo de todo el componente puede invertirse sin cambiar la solución.</li>
+</ul>
+<p>Por ejemplo, si un componente presenta coeficientes positivos elevados para cobertura educativa, acueducto y salud, y negativos para pobreza y desempleo, podría interpretarse como una dimensión de condiciones favorables de desarrollo y acceso a servicios. La interpretación concreta debe basarse en los resultados obtenidos.</p>
+</section>
+<section id="gráfico-de-variables" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="gráfico-de-variables"><span class="header-section-number">10.2</span> .Gráfico de variables</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_pca_var</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  modelo_pca,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">col.var =</span> <span class="st">"contrib"</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">gradient.cols =</span> <span class="fu">c</span>(<span class="st">"#2E86AB"</span>, <span class="st">"#F6C85F"</span>, <span class="st">"#D1495B"</span>),</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">repel =</span> <span class="cn">TRUE</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Círculo de correlaciones de las variables"</span>,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">"Contribución"</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Interpretación general:</p>
+<ul>
+<li>Flechas próximas: variables con correlación positiva.</li>
+<li>Flechas en direcciones opuestas: variables con correlación negativa.</li>
+<li>Flechas aproximadamente perpendiculares: relación lineal cercana a cero en la representación.</li>
+<li>Flechas más largas: variables mejor representadas en el plano mostrado.</li>
+</ul>
+<p>Estas interpretaciones se refieren a la proyección en los componentes seleccionados; no necesariamente describen toda la estructura de correlaciones.</p>
+</section>
+<section id="gráfico-de-individuos" class="level2" data-number="10.3">
+<h2 data-number="10.3" class="anchored" data-anchor-id="gráfico-de-individuos"><span class="header-section-number">10.3</span> .Gráfico de individuos</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_pca_ind</span>(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  modelo_pca,</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">"point"</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">pointsize =</span> <span class="dv">2</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">alpha.ind =</span> <span class="fl">0.7</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">repel =</span> <span class="cn">TRUE</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Representación de los municipios en el plano principal"</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Los municipios próximos presentan perfiles similares en las dimensiones representadas. Los puntos alejados del centro tienen puntuaciones más extremas en el plano de los componentes mostrados.</p>
+</section>
+<section id="biplot-1" class="level2" data-number="10.4">
+<h2 data-number="10.4" class="anchored" data-anchor-id="biplot-1"><span class="header-section-number">10.4</span> .Biplot</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_pca_biplot</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  modelo_pca,</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">repel =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">col.var =</span> <span class="st">"#D1495B"</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">col.ind =</span> <span class="st">"#2E86AB"</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">alpha.ind =</span> <span class="fl">0.65</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Biplot del PCA de indicadores municipales"</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>El biplot combina la ubicación de los municipios y la dirección de las variables. Se debe recordar que su lectura depende del escalamiento gráfico y de la proporción de varianza explicada por los componentes representados.</p>
+</section>
+</section>
+<section id="puntuaciones-e-interpretación-de-municipios" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> .Puntuaciones e interpretación de municipios</h1>
+<section id="obtener-puntuaciones" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="obtener-puntuaciones"><span class="header-section-number">11.1</span> .Obtener puntuaciones</h2>
+<p>Las puntuaciones de los componentes se encuentran en <code>modelo_pca$x</code>.</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>puntuaciones <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(modelo_pca<span class="sc">$</span>x)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(puntuaciones)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          PC1         PC2        PC3         PC4        PC5        PC6
+1 -1.54689018  0.87435911 -0.2329454 -0.88645518  0.5669269  0.5857441
+2  2.06592447 -0.41297706 -0.3670754  0.21590266 -0.2783849  0.2108348
+3 -0.04714861 -0.07542297  0.4966388  0.09258111  0.2932983 -0.2526647
+4 -0.08800447 -0.20565648  0.3708307 -1.32194565 -0.4062419  0.2361362
+5  1.69945599 -0.03265056  0.2841012 -0.14159910  0.4185459 -0.5479961
+6  5.67761592 -1.00696444  0.6125452  0.77501251  0.5704101 -0.2113485
+         PC7
+1  0.1597127
+2 -0.1743070
+3 -0.3159914
+4 -0.6259929
+5  0.1766359
+6  0.5215960</code></pre>
+</div>
+</div>
+<p>Se pueden unir con los nombres de los municipios:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>municipios_pca <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  datos_municipios <span class="sc">%&gt;%</span> <span class="fu">select</span>(municipio),</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  puntuaciones</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(municipios_pca)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 8
+  municipio         PC1     PC2    PC3     PC4    PC5    PC6    PC7
+  &lt;chr&gt;           &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+1 Municipio 001 -1.55    0.874  -0.233 -0.886   0.567  0.586  0.160
+2 Municipio 002  2.07   -0.413  -0.367  0.216  -0.278  0.211 -0.174
+3 Municipio 003 -0.0471 -0.0754  0.497  0.0926  0.293 -0.253 -0.316
+4 Municipio 004 -0.0880 -0.206   0.371 -1.32   -0.406  0.236 -0.626
+5 Municipio 005  1.70   -0.0327  0.284 -0.142   0.419 -0.548  0.177
+6 Municipio 006  5.68   -1.01    0.613  0.775   0.570 -0.211  0.522</code></pre>
+</div>
+</div>
+</section>
+<section id="ordenar-municipios-según-el-primer-componente" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="ordenar-municipios-según-el-primer-componente"><span class="header-section-number">11.2</span> .Ordenar municipios según el primer componente</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>municipios_pca <span class="sc">%&gt;%</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(PC1)) <span class="sc">%&gt;%</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(municipio, PC1, PC2) <span class="sc">%&gt;%</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 3
+   municipio       PC1    PC2
+   &lt;chr&gt;         &lt;dbl&gt;  &lt;dbl&gt;
+ 1 Municipio 006  5.68 -1.01 
+ 2 Municipio 015  5.44 -0.614
+ 3 Municipio 091  4.71 -0.320
+ 4 Municipio 067  4.62 -0.608
+ 5 Municipio 095  4.33 -0.215
+ 6 Municipio 084  3.55 -1.15 
+ 7 Municipio 083  3.17 -0.578
+ 8 Municipio 065  2.99  0.361
+ 9 Municipio 097  2.61  0.198
+10 Municipio 043  2.48 -0.698</code></pre>
+</div>
+</div>
+<p>Las puntuaciones altas o bajas solo tienen significado en relación con las cargas y la orientación del componente. No debe asumirse que un valor alto siempre representa mejores condiciones.</p>
+</section>
+<section id="visualizar-las-puntuaciones" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="visualizar-las-puntuaciones"><span class="header-section-number">11.3</span> .Visualizar las puntuaciones</h2>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  municipios_pca,</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(<span class="at">x =</span> PC1, <span class="at">y =</span> PC2, <span class="at">label =</span> municipio)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Puntuaciones de municipios en los dos primeros componentes"</span>,</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Primer componente principal"</span>,</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Segundo componente principal"</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="construcción-de-un-indicador-sintético-precauciones" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> .Construcción de un indicador sintético: precauciones</h1>
+<p>En algunos estudios se utiliza el primer componente como un indicador sintético. Esta decisión puede ser útil cuando el primer componente resume una dimensión coherente y explica una proporción importante de la variabilidad.</p>
+<p>Sin embargo, se deben considerar los siguientes aspectos:</p>
+<ol type="1">
+<li>El primer componente maximiza la varianza explicada, no necesariamente la relevancia normativa o social.</li>
+<li>Las ponderaciones se derivan de la estructura estadística de los datos, no de prioridades de política pública.</li>
+<li>La dirección del componente es arbitraria y debe orientarse para facilitar su interpretación.</li>
+<li>El indicador depende de las variables y observaciones incluidas.</li>
+<li>Los resultados pueden cambiar al actualizar la base.</li>
+<li>No debe utilizarse como única medida para asignar recursos o clasificar personas y territorios.</li>
+</ol>
+<p>Si se desea construir un índice de desarrollo, se requiere justificar las dimensiones, el tratamiento de las variables, la orientación de los indicadores y la pertinencia de las ponderaciones.</p>
+</section>
+<section id="pca-como-paso-previo-a-k-means" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> .PCA como paso previo a K-Means</h1>
+<p>En algunas aplicaciones se utiliza PCA para reducir las dimensiones antes de aplicar K-Means. Por ejemplo, se pueden conservar los primeros componentes que expliquen una proporción razonable de la variabilidad y utilizar sus puntuaciones para agrupar municipios.</p>
+<p>Ejemplo ilustrativo con los dos primeros componentes:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>puntuaciones_2d <span class="ot">&lt;-</span> modelo_pca<span class="sc">$</span>x[, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>kmeans_pca <span class="ot">&lt;-</span> <span class="fu">kmeans</span>(</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  puntuaciones_2d,</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">centers =</span> <span class="dv">3</span>,</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">nstart =</span> <span class="dv">30</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_cluster</span>(</span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> puntuaciones_2d,</span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">cluster =</span> kmeans_pca<span class="sc">$</span>cluster</span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="st">"point"</span>,</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">ellipse =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">ggtheme =</span> <span class="fu">theme_minimal</span>()</span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"K-Means aplicado a las puntuaciones de los dos primeros componentes"</span></span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Este procedimiento facilita el agrupamiento en un espacio reducido, pero al conservar solo dos componentes se descarta parte de la variabilidad. La decisión debe justificarse y se deben comparar los resultados con el agrupamiento realizado sobre las variables originales estandarizadas.</p>
+</section>
+<section id="buenas-prácticas-y-limitaciones" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> .Buenas prácticas y limitaciones</h1>
+<p>Antes de aplicar PCA en una entidad pública, conviene:</p>
+<ul>
+<li>Definir claramente la pregunta de análisis.</li>
+<li>Seleccionar indicadores con fundamento conceptual.</li>
+<li>Revisar valores faltantes, errores y valores extremos.</li>
+<li>Examinar las correlaciones entre variables.</li>
+<li>Justificar la estandarización.</li>
+<li>Evaluar la varianza explicada y las cargas.</li>
+<li>Revisar la estabilidad de los componentes ante cambios en la muestra.</li>
+<li>Documentar las transformaciones y decisiones.</li>
+<li>Evitar interpretar los componentes como dimensiones causales.</li>
+<li>Considerar las implicaciones distributivas y territoriales de cualquier indicador derivado.</li>
+</ul>
+<p>PCA es sensible a valores atípicos, porque se basa en varianzas y covarianzas. Cuando hay observaciones extremas, se debe estudiar su origen y considerar análisis de sensibilidad o métodos robustos.</p>
+</section>
+<section id="actividades-para-el-estudiante" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> .Actividades para el estudiante</h1>
+<section id="actividad-1." class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="actividad-1."><span class="header-section-number">15.1</span> .Actividad 1.</h2>
+<p><strong>Comprensión conceptual</strong></p>
+<p>Responda con sus propias palabras:</p>
+<ol type="1">
+<li>¿Qué es el Análisis de Componentes Principales?</li>
+<li>¿Cuál es el objetivo de reducir la dimensionalidad?</li>
+<li>¿Qué diferencia existe entre una variable original y un componente principal?</li>
+<li>¿Qué representan los valores propios?</li>
+<li>¿Cómo se calcula la proporción de varianza explicada?</li>
+<li>¿Qué información proporcionan las cargas de los componentes?</li>
+<li>¿Qué son las puntuaciones de los componentes?</li>
+<li>¿Por qué puede ser necesario estandarizar las variables?</li>
+<li>¿Qué representa el gráfico de sedimentación?</li>
+<li>¿Por qué PCA no permite establecer relaciones causales?</li>
+</ol>
+</section>
+<section id="actividad-2." class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="actividad-2."><span class="header-section-number">15.2</span> .Actividad 2.</h2>
+<p><strong>PCA de indicadores municipales</strong></p>
+<p>Utilizando la base <code>datos_municipios</code>:</p>
+<ol type="1">
+<li>Seleccione al menos cinco indicadores.</li>
+<li>Construya la matriz de correlaciones.</li>
+<li>Identifique pares de variables con correlaciones elevadas.</li>
+<li>Aplique PCA mediante <code>prcomp()</code>.</li>
+<li>Obtenga los valores propios.</li>
+<li>Calcule la varianza explicada y acumulada.</li>
+<li>Construya el gráfico de sedimentación.</li>
+<li>Determine cuántos componentes conservaría y justifique.</li>
+<li>Interprete las cargas de los dos primeros componentes.</li>
+<li>Identifique los municipios con puntuaciones extremas.</li>
+<li>Redacte conclusiones para la planeación territorial.</li>
+</ol>
+</section>
+<section id="actividad-3." class="level2" data-number="15.3">
+<h2 data-number="15.3" class="anchored" data-anchor-id="actividad-3."><span class="header-section-number">15.3</span> .Actividad 3.</h2>
+<p><strong>PCA en instituciones educativas</strong></p>
+<p>Una secretaría de educación desea resumir indicadores de 120 instituciones educativas. Genere o utilice una base con las siguientes variables:</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>matricula</code></td>
+<td>Número de estudiantes matriculados</td>
+</tr>
+<tr class="even">
+<td><code>docentes</code></td>
+<td>Número de docentes</td>
+</tr>
+<tr class="odd">
+<td><code>desercion</code></td>
+<td>Tasa de deserción (%)</td>
+</tr>
+<tr class="even">
+<td><code>internet</code></td>
+<td>Cobertura de internet (%)</td>
+</tr>
+<tr class="odd">
+<td><code>saber</code></td>
+<td>Puntaje promedio en pruebas estandarizadas</td>
+</tr>
+<tr class="even">
+<td><code>inversion</code></td>
+<td>Inversión anual por estudiante</td>
+</tr>
+<tr class="odd">
+<td><code>asistencia</code></td>
+<td>Porcentaje promedio de asistencia</td>
+</tr>
+</tbody>
+</table>
+<p>Desarrolle:</p>
+<ol type="1">
+<li>Explore la base y verifique valores faltantes.</li>
+<li>Seleccione las variables cuantitativas.</li>
+<li>Examine la matriz de correlaciones.</li>
+<li>Estandarice las variables.</li>
+<li>Ajuste un PCA.</li>
+<li>Calcule los valores propios y la varianza acumulada.</li>
+<li>Seleccione el número de componentes.</li>
+<li>Interprete las cargas de los componentes seleccionados.</li>
+<li>Represente las instituciones en un gráfico de individuos.</li>
+<li>Proponga cómo utilizar los resultados para orientar estrategias de apoyo educativo.</li>
+</ol>
+</section>
+<section id="actividad-4." class="level2" data-number="15.4">
+<h2 data-number="15.4" class="anchored" data-anchor-id="actividad-4."><span class="header-section-number">15.4</span> .Actividad 4.</h2>
+<p><strong>Comparación con y sin estandarización</strong></p>
+<p>Aplique PCA a una misma base:</p>
+<ol type="1">
+<li>Utilice <code>scale. = FALSE</code>.</li>
+<li>Utilice <code>scale. = TRUE</code>.</li>
+<li>Compare los valores propios y la varianza explicada.</li>
+<li>Compare las cargas de los componentes.</li>
+<li>Explique qué variables dominan el análisis sin estandarizar.</li>
+<li>Justifique cuál alternativa es más apropiada para el problema estudiado.</li>
+</ol>
+</section>
+<section id="actividad-5." class="level2" data-number="15.5">
+<h2 data-number="15.5" class="anchored" data-anchor-id="actividad-5."><span class="header-section-number">15.5</span> .Actividad 5.</h2>
+<p><strong>PCA y K-Means</strong></p>
+<ol type="1">
+<li>Aplique PCA a los indicadores municipales.</li>
+<li>Seleccione los componentes que considere adecuados.</li>
+<li>Utilice sus puntuaciones como entrada para K-Means.</li>
+<li>Compare el agrupamiento obtenido con el realizado sobre las variables originales.</li>
+<li>Evalúe las diferencias en los grupos.</li>
+<li>Discuta las ventajas y limitaciones de reducir dimensiones antes del agrupamiento.</li>
+</ol>
+</section>
+</section>
+<section id="reto-de-aplicación" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> .Reto de aplicación</h1>
+<p>Seleccione un problema de administración pública en el que se disponga de múltiples indicadores cuantitativos. Algunas posibilidades son:</p>
+<ul>
+<li>Construcción de dimensiones de desarrollo municipal.</li>
+<li>Análisis de indicadores de calidad educativa.</li>
+<li>Estudio de condiciones de acceso a servicios de salud.</li>
+<li>Caracterización de dependencias públicas.</li>
+<li>Análisis de infraestructura y servicios públicos.</li>
+</ul>
+<p>Elabore un informe que contenga:</p>
+<ol type="1">
+<li>Descripción del problema.</li>
+<li>Objetivo del PCA.</li>
+<li>Unidad de análisis y descripción de las variables.</li>
+<li>Justificación de la selección de indicadores.</li>
+<li>Preparación y estandarización de los datos.</li>
+<li>Matriz de correlaciones.</li>
+<li>Resultados del PCA.</li>
+<li>Selección del número de componentes.</li>
+<li>Interpretación de cargas y puntuaciones.</li>
+<li>Visualizaciones y conclusiones.</li>
+<li>Limitaciones y recomendaciones para la gestión pública.</li>
+</ol>
+</section>
+<section id="conclusiones" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> .Conclusiones</h1>
+<p>El Análisis de Componentes Principales permite resumir la información de múltiples variables cuantitativas mediante un número reducido de componentes no correlacionados. Su fundamento se encuentra en la descomposición de la matriz de covarianzas o correlaciones y en la identificación de direcciones que explican la mayor variabilidad posible de los datos.</p>
+<p>En R, la función <code>prcomp()</code> facilita su implementación. La interpretación requiere examinar los valores propios, la varianza explicada, las cargas y las puntuaciones, además de utilizar gráficos como el de sedimentación, el círculo de correlaciones y el biplot.</p>
+<p>En la administración pública, PCA puede facilitar el análisis de indicadores territoriales e institucionales, pero sus componentes son construcciones estadísticas y no dimensiones causales ni prioridades de política pública por sí mismas. Su uso debe acompañarse de justificación conceptual, transparencia y evaluación de sus limitaciones.</p>
+</section>
+<section id="referencias-y-recursos" class="level1" data-number="18">
+<h1 data-number="18"><span class="header-section-number">18</span> .Referencias y recursos</h1>
+<ul>
+<li>Jolliffe, I. T., &amp; Cadima, J. (2016). Principal component analysis: A review and recent developments. <em>Philosophical Transactions of the Royal Society A, 374</em>(2065), 20150202. https://doi.org/10.1098/rsta.2015.0202</li>
+<li>Jolliffe, I. T. (2002). <em>Principal Component Analysis</em> (2nd ed.). Springer.</li>
+<li>Abdi, H., &amp; Williams, L. J. (2010). Principal component analysis. <em>Wiley Interdisciplinary Reviews: Computational Statistics, 2</em>(4), 433–459. https://doi.org/10.1002/wics.101</li>
+<li>Documentación de <code>stats::prcomp()</code>: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/prcomp.html</li>
+<li>Documentación de <code>factoextra</code>: https://cran.r-project.org/package=factoextra</li>
+<li>Documentación de <code>corrplot</code>: https://cran.r-project.org/package=corrplot</li>
+</ul>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copiado");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copiado");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+          // target, if specified
+          link.setAttribute("target", "_blank");
+          if (link.getAttribute("rel") === null) {
+            link.setAttribute("rel", "noopener");
+          }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<script src="index_files/libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

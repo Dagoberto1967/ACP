@@ -1,0 +1,858 @@
+---
+title: "Análisis de Componentes Principales (PCA)"
+subtitle: "Fundamentos matemáticos, implementación en R "
+author: 
+  - name: Dagoberto Salgado Horta
+    affiliation: "Escuela Superior de Administración Pública"
+    affiliation-url: "https://www.esap.edu.co/"
+date: today
+lang: es
+title-block-banner: "#98b6ed"
+
+format:
+  html:
+    page-layout: full
+    fontsize: 14pt
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    number-sections: true
+    code-fold: true
+    code-summary: "Ver código"
+    theme: dark
+    highlight-style: monokai
+    html-math-method: katex
+    smooth-scroll: true
+    link-external-newwindow: true
+    code-overflow: scroll
+    favicon: favicon.ico
+    css: estilos.css
+    
+editor: visual
+
+knitr:
+  opts_chunk:
+    message: false
+    warning: false
+    fig.align: center
+    fig.width: 6
+    fig.height: 6
+    out.width: "70%"
+---
+
+
+```{=html}
+<div style="position:absolute; top:10px; right:10px;">
+<img src="Logo_ut.png" width="150">
+</div>
+```
+
+```{=html}
+<style>
+body{
+  background-color:#f7f6ed;
+  font-size:130%;
+  text-align:justify;
+}
+</style>
+```
+
+# .Cargar paquetes
+
+```{r}
+ipak <- function(pkg){
+
+  options(repos = c(CRAN="https://cloud.r-project.org"))
+
+  new.pkg <- pkg[!(pkg %in% rownames(installed.packages()))]
+
+  if(length(new.pkg)) install.packages(new.pkg, dependencies = TRUE)
+
+  invisible(lapply(pkg, function(p)
+    suppressPackageStartupMessages(library(p, character.only = TRUE))
+  ))
+}
+
+packages <- c("tidyverse","kableExtra","psych","readxl")
+
+ipak(packages)
+```
+
+
+# .Presentación
+
+En la administración pública es frecuente trabajar con bases de datos que contienen numerosos indicadores relacionados entre sí. Por ejemplo, para estudiar las condiciones de desarrollo de los municipios se pueden considerar indicadores de pobreza, educación, salud, empleo, vivienda, servicios públicos e inversión social.
+
+Cuando se utilizan muchas variables, el análisis puede resultar complejo, especialmente si existe correlación entre ellas. El **Análisis de Componentes Principales (PCA, por sus siglas en inglés)** es una técnica estadística multivariada que permite resumir la información de un conjunto de variables cuantitativas mediante un número menor de componentes no correlacionados entre sí.
+
+El PCA se utiliza para explorar patrones, reducir la dimensionalidad de los datos, visualizar observaciones y construir indicadores sintéticos. No reemplaza el análisis sustantivo de los fenómenos públicos ni demuestra relaciones causales.
+
+Este módulo presenta los fundamentos del PCA, su lógica matemática, la implementación en R y la interpretación de los resultados mediante un ejemplo de indicadores municipales.
+
+## .Resultados de aprendizaje
+
+Al finalizar el módulo, el estudiante estará en capacidad de:
+
+- Explicar el propósito del análisis de componentes principales.
+- Reconocer cuándo es pertinente aplicar PCA.
+- Comprender la relación entre varianza, covarianza, correlación y componentes principales.
+- Estandarizar variables y preparar una matriz de datos para el análisis.
+- Implementar PCA mediante `prcomp()` en R.
+- Interpretar valores propios, proporción de varianza explicada y cargas factoriales.
+- Utilizar gráficos de sedimentación, círculo de correlaciones y biplot.
+- Interpretar puntuaciones de los componentes para comparar municipios.
+- Reconocer las limitaciones y precauciones del uso de indicadores sintéticos en la gestión pública.
+
+# .Fundamentos del PCA
+
+## .¿Qué es el PCA?
+
+El Análisis de Componentes Principales es una técnica de reducción de dimensionalidad que transforma un conjunto de variables cuantitativas posiblemente correlacionadas en un conjunto más pequeño de nuevas variables llamadas **componentes principales**.
+
+Cada componente es una combinación lineal de las variables originales. Los componentes se construyen de modo que:
+
+- El primer componente explica la mayor proporción posible de la variabilidad total.
+- El segundo componente explica la mayor proporción posible de la variabilidad restante y es ortogonal al primero.
+- Los componentes siguientes explican progresivamente la variabilidad restante y son ortogonales a los anteriores.
+
+El propósito es conservar una parte importante de la información original utilizando menos dimensiones.
+
+## .Ejemplo en administración pública
+
+Una gobernación desea estudiar las condiciones de desarrollo de 50 municipios. Dispone de indicadores relacionados con:
+
+- Pobreza multidimensional.
+- Cobertura educativa.
+- Cobertura de acueducto.
+- Cobertura de alcantarillado.
+- Acceso a servicios de salud.
+- Desempleo.
+- Inversión social por habitante.
+
+Algunas variables pueden estar relacionadas. Por ejemplo, la cobertura de acueducto y alcantarillado podrían presentar una correlación positiva. El PCA permite resumir parte de la información común en componentes principales.
+
+La técnica puede facilitar la exploración de perfiles territoriales y la construcción de indicadores sintéticos, siempre que se interpreten cuidadosamente las variables y las direcciones de los componentes.
+
+## .¿Por qué reducir la dimensionalidad?
+
+Cuando una base tiene muchas variables, pueden presentarse dificultades como:
+
+- Correlaciones elevadas entre variables.
+- Dificultad para visualizar observaciones en muchas dimensiones.
+- Redundancia de información.
+- Complejidad para resumir y comunicar resultados.
+- Dificultad para construir modelos posteriores con variables altamente relacionadas.
+
+PCA permite representar los datos en menos dimensiones, procurando conservar la mayor cantidad posible de variabilidad.
+
+## .PCA y análisis de conglomerados
+
+PCA y K-Means tienen propósitos diferentes:
+
+| Característica | PCA | K-Means |
+|---|---|---|
+| Objetivo | Reducir dimensiones | Formar grupos |
+| Resultado | Componentes principales | Conglomerados |
+| Requiere definir K | No | Sí |
+| Variable respuesta | No requiere | No requiere |
+| Uso habitual | Resumir y visualizar información | Identificar grupos de observaciones |
+
+PCA puede utilizarse antes de un análisis de conglomerados para representar los datos en menos dimensiones. Sin embargo, no siempre es necesario ni garantiza que el agrupamiento posterior sea mejor.
+
+# .Fundamentos matemáticos del PCA
+
+## .Matriz de datos
+
+Suponga que se tienen $n$ municipios y $p$ indicadores. La matriz de datos se representa como:
+
+$$
+X=
+\begin{pmatrix}
+x_{11} & x_{12} & \cdots & x_{1p}\\
+x_{21} & x_{22} & \cdots & x_{2p}\\
+\vdots & \vdots & \ddots & \vdots\\
+x_{n1} & x_{n2} & \cdots & x_{np}
+\end{pmatrix}
+$$
+
+Las filas representan municipios y las columnas representan indicadores.
+
+## .Centrado y estandarización
+
+Antes de aplicar PCA se suele centrar cada variable restando su media:
+
+$$
+X_{c,ij}=X_{ij}-\bar X_j
+$$
+
+Si las variables tienen unidades o escalas diferentes, se recomienda estandarizarlas:
+
+$$
+Z_{ij}=\frac{X_{ij}-\bar X_j}{s_j}
+$$
+
+Donde:
+
+- $X_{ij}$: valor observado de la variable $j$ en la unidad $i$.
+- $\bar X_j$: media de la variable $j$.
+- $s_j$: desviación estándar de la variable $j$.
+
+La estandarización hace que las variables tengan media cero y desviación estándar uno. De este modo, una variable expresada en pesos no domina automáticamente a otra expresada en porcentajes.
+
+La decisión de estandarizar debe considerar el significado de las variables. Si todas están en unidades comparables y sus escalas son intencionales, el centrado sin escalado puede ser apropiado.
+
+## .Matriz de covarianzas y matriz de correlaciones
+
+El PCA puede obtenerse a partir de la matriz de covarianzas o de la matriz de correlaciones.
+
+La covarianza entre dos variables $X_j$ y $X_k$ se define como:
+
+$$
+Cov(X_j,X_k)=
+\frac{1}{n-1}\sum_{i=1}^{n}
+(X_{ij}-\bar X_j)(X_{ik}-\bar X_k)
+$$
+
+La matriz de correlaciones contiene las correlaciones entre todos los pares de variables. Cuando se estandarizan las variables, el PCA basado en la matriz de covarianzas de los datos estandarizados equivale al PCA basado en la matriz de correlaciones de las variables originales.
+
+## .Valores y vectores propios
+
+El PCA se basa en la descomposición de la matriz de covarianzas o correlaciones. Para una matriz $S$, se buscan valores propios $\lambda$ y vectores propios $v$ que satisfacen:
+
+$$
+Sv=\lambda v
+$$
+
+Los valores propios representan la varianza explicada por cada componente. Los vectores propios determinan las ponderaciones de las variables originales en cada componente.
+
+Los valores propios se ordenan de mayor a menor:
+
+$$
+\lambda_1\geq\lambda_2\geq\cdots\geq\lambda_p\geq 0
+$$
+
+## .Componentes principales
+
+Cada componente es una combinación lineal de las variables originales estandarizadas:
+
+$$
+PC_1=a_{11}Z_1+a_{12}Z_2+\cdots+a_{1p}Z_p
+$$
+
+$$
+PC_2=a_{21}Z_1+a_{22}Z_2+\cdots+a_{2p}Z_p
+$$
+
+Los coeficientes $a_{ij}$ corresponden a las ponderaciones asociadas a los vectores propios.
+
+Los componentes son ortogonales entre sí, es decir, no están correlacionados en la muestra bajo la construcción estándar del PCA.
+
+## .Proporción de varianza explicada
+
+La proporción de varianza explicada por el componente $j$ se calcula como:
+
+$$
+PVE_j=\frac{\lambda_j}{\sum_{k=1}^{p}\lambda_k}
+$$
+
+La proporción acumulada hasta el componente $m$ es:
+
+$$
+PVE_{acum}(m)=
+\sum_{j=1}^{m}PVE_j
+$$
+
+Por ejemplo, si los dos primeros componentes explican 72 % de la variabilidad total, una representación en dos dimensiones conserva el 72 % de la variabilidad según el criterio del PCA.
+
+# .Criterios para seleccionar el número de componentes
+
+No existe una regla única para determinar cuántos componentes conservar. Se recomienda combinar criterios estadísticos y sustantivos.
+
+## .Porcentaje de varianza acumulada
+
+Se puede seleccionar el menor número de componentes que alcance un porcentaje acumulado considerado suficiente para el propósito del análisis. En aplicaciones exploratorias suele examinarse el rango de 70 % a 85 %, pero no es un umbral universal.
+
+## .Gráfico de sedimentación (scree plot)
+
+Representa los valores propios en orden descendente. Se busca un punto de inflexión a partir del cual la varianza explicada por los componentes adicionales disminuye menos.
+
+## .Criterio de Kaiser
+
+Cuando el PCA se realiza sobre variables estandarizadas, el criterio de Kaiser propone conservar componentes con valores propios mayores que 1.
+
+Este criterio es una referencia práctica, no una regla definitiva. Puede retener demasiados o muy pocos componentes según el conjunto de datos.
+
+## .Interpretabilidad
+
+Los componentes seleccionados deben tener una interpretación razonable a partir de las variables que presentan mayores cargas. Un componente que explica mucha varianza pero no tiene interpretación útil puede no ser adecuado para construir un indicador de gestión.
+
+# .Cargas, puntuaciones y contribuciones
+
+## .Cargas de las variables
+
+Las cargas permiten estudiar la relación entre las variables originales y los componentes. En R, la salida de `prcomp()` presenta las rotaciones, es decir, los coeficientes de los vectores propios.
+
+Una carga de magnitud elevada indica que la variable tiene un peso importante en la definición del componente. El signo indica la dirección de la relación con el componente.
+
+El signo global de un componente es arbitrario: multiplicar todos sus coeficientes por -1 produce el mismo componente con orientación opuesta. Por eso la interpretación debe centrarse en los signos relativos y en las magnitudes.
+
+## .Puntuaciones de los componentes
+
+Las puntuaciones (*scores*) son los valores de cada observación en los nuevos ejes. Permiten comparar municipios según los componentes retenidos.
+
+Por ejemplo, si el primer componente resume condiciones de cobertura de servicios y educación, las puntuaciones permiten identificar municipios con valores relativamente altos o bajos en esa dimensión.
+
+## .Biplot
+
+El biplot combina en una misma representación:
+
+- Las observaciones, representadas mediante puntos.
+- Las variables, representadas mediante vectores o flechas.
+
+Permite explorar qué municipios presentan valores altos o bajos en determinadas combinaciones de variables y cuáles indicadores tienden a variar conjuntamente.
+
+La interpretación depende del método de escalamiento y de la calidad de la representación en los componentes mostrados.
+
+# .Preparación del entorno de trabajo en R
+
+## .Instalación y carga de paquetes
+
+```{r}
+# Ejecutar una sola vez si los paquetes no están instalados
+# install.packages(c("tidyverse", "factoextra", "corrplot"))
+
+library(tidyverse)
+library(factoextra)
+library(corrplot)
+```
+
+Funciones y paquetes principales:
+
+- `prcomp()`: función base de R para realizar PCA mediante descomposición en valores singulares.
+- `summary()`: resume la importancia de los componentes.
+- `factoextra`: facilita la visualización de resultados.
+- `corrplot`: permite representar matrices de correlaciones.
+
+## .Revisión de datos
+
+Antes de ejecutar PCA se debe:
+
+1. Seleccionar variables cuantitativas pertinentes.
+2. Revisar datos faltantes.
+3. Examinar valores atípicos y errores de captura.
+4. Verificar que las variables tengan variabilidad.
+5. Decidir si se requiere estandarización.
+
+PCA no admite valores faltantes en su implementación habitual mediante `prcomp()`. Debe definirse un tratamiento apropiado antes del análisis.
+
+# ,Ejemplo completo
+
+**PCA de indicadores municipales**
+
+## .Planteamiento del problema
+
+Una gobernación desea resumir un conjunto de indicadores de desarrollo municipal para explorar las principales dimensiones que caracterizan a sus territorios.
+
+Se utilizarán los siguientes indicadores:
+
+| Variable | Descripción |
+|---|---|
+| `pobreza` | Pobreza multidimensional (%) |
+| `cobertura_educativa` | Cobertura educativa (%) |
+| `cobertura_acueducto` | Cobertura de acueducto (%) |
+| `cobertura_alcantarillado` | Cobertura de alcantarillado (%) |
+| `acceso_salud` | Acceso a servicios de salud (%) |
+| `desempleo` | Desempleo (%) |
+| `inversion_social` | Inversión social por habitante (miles de pesos) |
+
+> Los datos que se generan a continuación son simulados y tienen fines pedagógicos. No corresponden a indicadores oficiales.
+
+## .Construcción de una base simulada
+
+```{r}
+set.seed(2026)
+
+n <- 100
+
+# Factor latente simulado para generar perfiles diferenciados
+condicion <- rnorm(n)
+
+datos_municipios <- tibble(
+  municipio = paste("Municipio", sprintf("%03d", 1:n)),
+  pobreza = 28 - 8 * condicion + rnorm(n, 0, 4),
+  cobertura_educativa = 78 + 6 * condicion + rnorm(n, 0, 4),
+  cobertura_acueducto = 70 + 10 * condicion + rnorm(n, 0, 6),
+  cobertura_alcantarillado = 62 + 11 * condicion + rnorm(n, 0, 7),
+  acceso_salud = 76 + 5 * condicion + rnorm(n, 0, 4),
+  desempleo = 12 - 2.5 * condicion + rnorm(n, 0, 1.8),
+  inversion_social = 650 + 100 * condicion + rnorm(n, 0, 80)
+) %>%
+  mutate(
+    across(
+      c(pobreza, cobertura_educativa, cobertura_acueducto,
+        cobertura_alcantarillado, acceso_salud, desempleo),
+      ~ pmin(pmax(.x, 0), 100)
+    ),
+    inversion_social = pmax(inversion_social, 50)
+  )
+
+head(datos_municipios)
+```
+
+## .Exploración inicial
+
+```{r}
+glimpse(datos_municipios)
+summary(datos_municipios)
+
+# Comprobar valores faltantes
+colSums(is.na(datos_municipios))
+```
+
+## .Selección de variables
+
+Se excluye el identificador `municipio`, porque no es una variable cuantitativa que deba participar en el cálculo de componentes.
+
+```{r}
+indicadores <- datos_municipios %>%
+  select(
+    pobreza,
+    cobertura_educativa,
+    cobertura_acueducto,
+    cobertura_alcantarillado,
+    acceso_salud,
+    desempleo,
+    inversion_social
+  )
+```
+
+## .Matriz de correlaciones
+
+Antes de realizar PCA es conveniente explorar las relaciones entre las variables.
+
+```{r}
+matriz_cor <- cor(indicadores)
+
+round(matriz_cor, 2)
+
+corrplot(
+  matriz_cor,
+  method = "color",
+  type = "upper",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45
+)
+```
+
+Las correlaciones ayudan a identificar variables que presentan información compartida. Sin embargo, el PCA puede aplicarse aun cuando no todas las variables estén altamente correlacionadas; la utilidad de la reducción dependerá de la estructura global de los datos.
+
+# .Implementación del PCA con prcomp()
+
+## .Estandarización y ajuste del modelo
+
+Se utilizará `scale. = TRUE` para centrar y escalar las variables.
+
+```{r}
+modelo_pca <- prcomp(
+  indicadores,
+  center = TRUE,
+  scale. = TRUE
+)
+
+modelo_pca
+```
+
+Argumentos:
+
+- `center = TRUE`: resta la media de cada variable.
+- `scale. = TRUE`: divide cada variable por su desviación estándar.
+
+La función `prcomp()` realiza el cálculo mediante descomposición en valores singulares, una estrategia numéricamente estable para obtener los componentes principales.
+
+## .Resumen de los componentes
+
+```{r}
+summary(modelo_pca)
+```
+
+El resumen presenta:
+
+- Desviación estándar de cada componente.
+- Proporción de varianza explicada.
+- Proporción acumulada de varianza explicada.
+
+## .Valores propios
+
+Los valores propios se obtienen elevando al cuadrado las desviaciones estándar de los componentes:
+
+```{r}
+valores_propios <- modelo_pca$sdev^2
+
+tabla_valores <- tibble(
+  Componente = paste0("PC", seq_along(valores_propios)),
+  Valor_propio = valores_propios,
+  Varianza_porcentual = 100 * valores_propios / sum(valores_propios),
+  Varianza_acumulada = 100 * cumsum(valores_propios) / sum(valores_propios)
+)
+
+tabla_valores
+```
+
+La tabla permite determinar cuánta variabilidad explica cada componente y cuánta se acumula al conservar varios componentes.
+
+## .Gráfico de sedimentación
+
+```{r}
+fviz_eig(
+  modelo_pca,
+  addlabels = TRUE,
+  ylim = c(0, 100)
+) +
+  labs(
+    title = "Gráfico de sedimentación del PCA",
+    x = "Componentes principales",
+    y = "Porcentaje de varianza explicada"
+  ) +
+  theme_minimal()
+```
+
+El gráfico ayuda a observar dónde disminuye la contribución marginal de los componentes. Se debe interpretar junto con la varianza acumulada y la utilidad sustantiva.
+
+# .Interpretación de los componentes principales
+
+## .Matriz de rotaciones
+
+```{r}
+round(modelo_pca$rotation, 3)
+```
+
+Las columnas corresponden a los componentes y las filas a las variables originales. Los coeficientes muestran cómo se construye cada componente a partir de las variables estandarizadas.
+
+Para facilitar la interpretación de los dos primeros componentes:
+
+```{r}
+cargas <- as.data.frame(modelo_pca$rotation) %>%
+  rownames_to_column("Variable")
+
+cargas %>%
+  select(Variable, PC1, PC2) %>%
+  arrange(desc(abs(PC1)))
+```
+
+**Orientación para interpretar:**
+
+- Identifique las variables con coeficientes de mayor magnitud.
+- Observe si sus signos son iguales u opuestos.
+- Relacione el patrón con el fenómeno público estudiado.
+- Evite asignar nombres a un componente basándose en una sola variable.
+- Recuerde que el signo de todo el componente puede invertirse sin cambiar la solución.
+
+Por ejemplo, si un componente presenta coeficientes positivos elevados para cobertura educativa, acueducto y salud, y negativos para pobreza y desempleo, podría interpretarse como una dimensión de condiciones favorables de desarrollo y acceso a servicios. La interpretación concreta debe basarse en los resultados obtenidos.
+
+## .Gráfico de variables
+
+```{r}
+fviz_pca_var(
+  modelo_pca,
+  col.var = "contrib",
+  gradient.cols = c("#2E86AB", "#F6C85F", "#D1495B"),
+  repel = TRUE
+) +
+  labs(
+    title = "Círculo de correlaciones de las variables",
+    color = "Contribución"
+  ) +
+  theme_minimal()
+```
+
+Interpretación general:
+
+- Flechas próximas: variables con correlación positiva.
+- Flechas en direcciones opuestas: variables con correlación negativa.
+- Flechas aproximadamente perpendiculares: relación lineal cercana a cero en la representación.
+- Flechas más largas: variables mejor representadas en el plano mostrado.
+
+Estas interpretaciones se refieren a la proyección en los componentes seleccionados; no necesariamente describen toda la estructura de correlaciones.
+
+## .Gráfico de individuos
+
+```{r}
+fviz_pca_ind(
+  modelo_pca,
+  geom = "point",
+  pointsize = 2,
+  alpha.ind = 0.7,
+  repel = TRUE
+) +
+  labs(
+    title = "Representación de los municipios en el plano principal"
+  ) +
+  theme_minimal()
+```
+
+Los municipios próximos presentan perfiles similares en las dimensiones representadas. Los puntos alejados del centro tienen puntuaciones más extremas en el plano de los componentes mostrados.
+
+## .Biplot
+
+```{r}
+fviz_pca_biplot(
+  modelo_pca,
+  repel = TRUE,
+  col.var = "#D1495B",
+  col.ind = "#2E86AB",
+  alpha.ind = 0.65
+) +
+  labs(
+    title = "Biplot del PCA de indicadores municipales"
+  ) +
+  theme_minimal()
+```
+
+El biplot combina la ubicación de los municipios y la dirección de las variables. Se debe recordar que su lectura depende del escalamiento gráfico y de la proporción de varianza explicada por los componentes representados.
+
+# .Puntuaciones e interpretación de municipios
+
+## .Obtener puntuaciones
+
+Las puntuaciones de los componentes se encuentran en `modelo_pca$x`.
+
+```{r}
+puntuaciones <- as.data.frame(modelo_pca$x)
+
+head(puntuaciones)
+```
+
+Se pueden unir con los nombres de los municipios:
+
+```{r}
+municipios_pca <- bind_cols(
+  datos_municipios %>% select(municipio),
+  puntuaciones
+)
+
+head(municipios_pca)
+```
+
+## .Ordenar municipios según el primer componente
+
+```{r}
+municipios_pca %>%
+  arrange(desc(PC1)) %>%
+  select(municipio, PC1, PC2) %>%
+  head(10)
+```
+
+Las puntuaciones altas o bajas solo tienen significado en relación con las cargas y la orientación del componente. No debe asumirse que un valor alto siempre representa mejores condiciones.
+
+## .Visualizar las puntuaciones
+
+```{r}
+ggplot(
+  municipios_pca,
+  aes(x = PC1, y = PC2, label = municipio)
+) +
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "Puntuaciones de municipios en los dos primeros componentes",
+    x = "Primer componente principal",
+    y = "Segundo componente principal"
+  ) +
+  theme_minimal()
+```
+
+# .Construcción de un indicador sintético: precauciones
+
+En algunos estudios se utiliza el primer componente como un indicador sintético. Esta decisión puede ser útil cuando el primer componente resume una dimensión coherente y explica una proporción importante de la variabilidad.
+
+Sin embargo, se deben considerar los siguientes aspectos:
+
+1. El primer componente maximiza la varianza explicada, no necesariamente la relevancia normativa o social.
+2. Las ponderaciones se derivan de la estructura estadística de los datos, no de prioridades de política pública.
+3. La dirección del componente es arbitraria y debe orientarse para facilitar su interpretación.
+4. El indicador depende de las variables y observaciones incluidas.
+5. Los resultados pueden cambiar al actualizar la base.
+6. No debe utilizarse como única medida para asignar recursos o clasificar personas y territorios.
+
+Si se desea construir un índice de desarrollo, se requiere justificar las dimensiones, el tratamiento de las variables, la orientación de los indicadores y la pertinencia de las ponderaciones.
+
+# .PCA como paso previo a K-Means
+
+En algunas aplicaciones se utiliza PCA para reducir las dimensiones antes de aplicar K-Means. Por ejemplo, se pueden conservar los primeros componentes que expliquen una proporción razonable de la variabilidad y utilizar sus puntuaciones para agrupar municipios.
+
+Ejemplo ilustrativo con los dos primeros componentes:
+
+```{r}
+puntuaciones_2d <- modelo_pca$x[, 1:2]
+
+set.seed(123)
+
+kmeans_pca <- kmeans(
+  puntuaciones_2d,
+  centers = 3,
+  nstart = 30
+)
+
+fviz_cluster(
+  list(
+    data = puntuaciones_2d,
+    cluster = kmeans_pca$cluster
+  ),
+  geom = "point",
+  ellipse = TRUE,
+  ggtheme = theme_minimal()
+) +
+  labs(
+    title = "K-Means aplicado a las puntuaciones de los dos primeros componentes"
+  )
+```
+
+Este procedimiento facilita el agrupamiento en un espacio reducido, pero al conservar solo dos componentes se descarta parte de la variabilidad. La decisión debe justificarse y se deben comparar los resultados con el agrupamiento realizado sobre las variables originales estandarizadas.
+
+# .Buenas prácticas y limitaciones
+
+Antes de aplicar PCA en una entidad pública, conviene:
+
+- Definir claramente la pregunta de análisis.
+- Seleccionar indicadores con fundamento conceptual.
+- Revisar valores faltantes, errores y valores extremos.
+- Examinar las correlaciones entre variables.
+- Justificar la estandarización.
+- Evaluar la varianza explicada y las cargas.
+- Revisar la estabilidad de los componentes ante cambios en la muestra.
+- Documentar las transformaciones y decisiones.
+- Evitar interpretar los componentes como dimensiones causales.
+- Considerar las implicaciones distributivas y territoriales de cualquier indicador derivado.
+
+PCA es sensible a valores atípicos, porque se basa en varianzas y covarianzas. Cuando hay observaciones extremas, se debe estudiar su origen y considerar análisis de sensibilidad o métodos robustos.
+
+# .Actividades para el estudiante
+
+## .Actividad 1. 
+
+**Comprensión conceptual**
+
+Responda con sus propias palabras:
+
+1. ¿Qué es el Análisis de Componentes Principales?
+2. ¿Cuál es el objetivo de reducir la dimensionalidad?
+3. ¿Qué diferencia existe entre una variable original y un componente principal?
+4. ¿Qué representan los valores propios?
+5. ¿Cómo se calcula la proporción de varianza explicada?
+6. ¿Qué información proporcionan las cargas de los componentes?
+7. ¿Qué son las puntuaciones de los componentes?
+8. ¿Por qué puede ser necesario estandarizar las variables?
+9. ¿Qué representa el gráfico de sedimentación?
+10. ¿Por qué PCA no permite establecer relaciones causales?
+
+## .Actividad 2. 
+
+**PCA de indicadores municipales**
+
+Utilizando la base `datos_municipios`:
+
+1. Seleccione al menos cinco indicadores.
+2. Construya la matriz de correlaciones.
+3. Identifique pares de variables con correlaciones elevadas.
+4. Aplique PCA mediante `prcomp()`.
+5. Obtenga los valores propios.
+6. Calcule la varianza explicada y acumulada.
+7. Construya el gráfico de sedimentación.
+8. Determine cuántos componentes conservaría y justifique.
+9. Interprete las cargas de los dos primeros componentes.
+10. Identifique los municipios con puntuaciones extremas.
+11. Redacte conclusiones para la planeación territorial.
+
+## .Actividad 3. 
+
+**PCA en instituciones educativas**
+
+Una secretaría de educación desea resumir indicadores de 120 instituciones educativas. Genere o utilice una base con las siguientes variables:
+
+| Variable | Descripción |
+|---|---|
+| `matricula` | Número de estudiantes matriculados |
+| `docentes` | Número de docentes |
+| `desercion` | Tasa de deserción (%) |
+| `internet` | Cobertura de internet (%) |
+| `saber` | Puntaje promedio en pruebas estandarizadas |
+| `inversion` | Inversión anual por estudiante |
+| `asistencia` | Porcentaje promedio de asistencia |
+
+Desarrolle:
+
+1. Explore la base y verifique valores faltantes.
+2. Seleccione las variables cuantitativas.
+3. Examine la matriz de correlaciones.
+4. Estandarice las variables.
+5. Ajuste un PCA.
+6. Calcule los valores propios y la varianza acumulada.
+7. Seleccione el número de componentes.
+8. Interprete las cargas de los componentes seleccionados.
+9. Represente las instituciones en un gráfico de individuos.
+10. Proponga cómo utilizar los resultados para orientar estrategias de apoyo educativo.
+
+## .Actividad 4. 
+
+**Comparación con y sin estandarización**
+
+Aplique PCA a una misma base:
+
+1. Utilice `scale. = FALSE`.
+2. Utilice `scale. = TRUE`.
+3. Compare los valores propios y la varianza explicada.
+4. Compare las cargas de los componentes.
+5. Explique qué variables dominan el análisis sin estandarizar.
+6. Justifique cuál alternativa es más apropiada para el problema estudiado.
+
+## .Actividad 5. 
+
+**PCA y K-Means**
+
+1. Aplique PCA a los indicadores municipales.
+2. Seleccione los componentes que considere adecuados.
+3. Utilice sus puntuaciones como entrada para K-Means.
+4. Compare el agrupamiento obtenido con el realizado sobre las variables originales.
+5. Evalúe las diferencias en los grupos.
+6. Discuta las ventajas y limitaciones de reducir dimensiones antes del agrupamiento.
+
+# .Reto de aplicación
+
+Seleccione un problema de administración pública en el que se disponga de múltiples indicadores cuantitativos. Algunas posibilidades son:
+
+- Construcción de dimensiones de desarrollo municipal.
+- Análisis de indicadores de calidad educativa.
+- Estudio de condiciones de acceso a servicios de salud.
+- Caracterización de dependencias públicas.
+- Análisis de infraestructura y servicios públicos.
+
+Elabore un informe que contenga:
+
+1. Descripción del problema.
+2. Objetivo del PCA.
+3. Unidad de análisis y descripción de las variables.
+4. Justificación de la selección de indicadores.
+5. Preparación y estandarización de los datos.
+6. Matriz de correlaciones.
+7. Resultados del PCA.
+8. Selección del número de componentes.
+9. Interpretación de cargas y puntuaciones.
+10. Visualizaciones y conclusiones.
+11. Limitaciones y recomendaciones para la gestión pública.
+
+# .Conclusiones
+
+El Análisis de Componentes Principales permite resumir la información de múltiples variables cuantitativas mediante un número reducido de componentes no correlacionados. Su fundamento se encuentra en la descomposición de la matriz de covarianzas o correlaciones y en la identificación de direcciones que explican la mayor variabilidad posible de los datos.
+
+En R, la función `prcomp()` facilita su implementación. La interpretación requiere examinar los valores propios, la varianza explicada, las cargas y las puntuaciones, además de utilizar gráficos como el de sedimentación, el círculo de correlaciones y el biplot.
+
+En la administración pública, PCA puede facilitar el análisis de indicadores territoriales e institucionales, pero sus componentes son construcciones estadísticas y no dimensiones causales ni prioridades de política pública por sí mismas. Su uso debe acompañarse de justificación conceptual, transparencia y evaluación de sus limitaciones.
+
+# .Referencias y recursos
+
+- Jolliffe, I. T., & Cadima, J. (2016). Principal component analysis: A review and recent developments. *Philosophical Transactions of the Royal Society A, 374*(2065), 20150202. https://doi.org/10.1098/rsta.2015.0202
+- Jolliffe, I. T. (2002). *Principal Component Analysis* (2nd ed.). Springer.
+- Abdi, H., & Williams, L. J. (2010). Principal component analysis. *Wiley Interdisciplinary Reviews: Computational Statistics, 2*(4), 433–459. https://doi.org/10.1002/wics.101
+- Documentación de `stats::prcomp()`: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/prcomp.html
+- Documentación de `factoextra`: https://cran.r-project.org/package=factoextra
+- Documentación de `corrplot`: https://cran.r-project.org/package=corrplot
